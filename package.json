@@ -1,0 +1,20 @@
+{
+    "name": "infinite-scroll-init",
+    "version": "3.1.0",
+    "description": "Infinite scroll initiator with loading indicator",
+    "main": "index.js",
+    "repository": "schuttelaar/infinite-scroll-init",
+    "keywords": [
+        "infinite",
+        "scroll",
+        "infinite",
+        "scroll",
+        "loading",
+        "indicator"
+    ],
+    "dependencies": {
+        "jquery": "^3.3.1"
+    },
+    "author": "Mahmoud Al-Refaai",
+    "license": "MIT"
+}
