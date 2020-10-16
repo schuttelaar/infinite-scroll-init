@@ -1,5 +1,5 @@
 /**
- * @version 3.1
+ * @version 3.1.1
  * @author Mahmoud Al-Refaai <Schuttelaar & Partners>
  */
 
@@ -163,9 +163,9 @@ export default class InfiniteScroll {
 
                 if (param[0].slice(-2) === "[]") {
                     if (!temp[param[0]]) temp[param[0]] = [];
-                    temp[param[0]].push(param[1]);
+                    temp[param[0]].push(decodeURI(param[1]));
                 } else {
-                    temp[param[0]] = temp[1];
+                    temp[param[0]] = decodeURI(param[1]);
                 }
             });
             dataParams = temp;

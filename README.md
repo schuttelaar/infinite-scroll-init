@@ -32,7 +32,7 @@ let segment = segmentParam && !isNaN(segmentParam)? parseInt(segmentParam) : 1;
 
 // Initialize InfiniteScroll obj
 const infiniteScroll = new InfiniteScroll({
-    segment: page,
+    segment: segment,
     container: '#cards.container',
     autoScroll: true,
     ajaxRoute: '/cards/data',
