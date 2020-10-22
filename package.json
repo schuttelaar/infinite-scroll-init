@@ -1,6 +1,6 @@
 {
     "name": "infinite-scroll-init",
-    "version": "3.1.1",
+    "version": "3.2.0",
     "description": "Infinite scroll initiator with loading indicator",
     "main": "index.js",
     "repository": "schuttelaar/infinite-scroll-init",
