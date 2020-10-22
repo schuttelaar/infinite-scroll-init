@@ -1,5 +1,5 @@
 /**
- * @version 3.1.1
+ * @version 3.2
  * @author Mahmoud Al-Refaai <Schuttelaar & Partners>
  */
 
@@ -133,7 +133,7 @@ export default class InfiniteScroll {
     }
 
     /**
-     * Scroll down to last three element in the container 
+     * Scroll down to the last three element in the container.
      */
     scrollDown() {
         let container = document.querySelector(this.config.container);
@@ -227,7 +227,7 @@ export default class InfiniteScroll {
     /**
      * @param {boolean} lock set to false to unlock the infinite scroll.
      */
-    setLockInfiniteScroll(lock = true) {
+    setLockInfiniteScroll(lock) {
         this.config.lockInfiniteScroll = lock;
     }
 
@@ -266,7 +266,10 @@ export default class InfiniteScroll {
  * @param {String} config.html         string with HTML of custom loading indicator (class of outer div need to be 'inf-loading-indicator'),                                                       to use this custom indicator the type should be set to 0.
  */
 export function initLoadingIndicator(config) {
-    const { container, color = 'lightgray', size = '0.7em', type, html } = config;
+    let { container, color = 'lightgray', size = '0.7em', type, html } = config;
+
+    if (typeof container === 'string')
+        container = $(container);
 
     switch (type) {
         case 0: //custom indicator, just append html to container

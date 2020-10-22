@@ -36,7 +36,7 @@ const infiniteScroll = new InfiniteScroll({
     container: '#cards.container',
     autoScroll: true,
     ajaxRoute: '/cards/data',
-    ajaxDataType: 'json',
+    ajaxDataType: 'html',
     getAjaxData: qs.getAllParams,
     onSuccess: appendCards,
     updateParam: qs.updateParam,
@@ -60,13 +60,13 @@ The essential configuration that need to be passed to the constructor in order t
 | ------------- | :-------: | ----------------------------------------------------------------------------------------------------------- |
 | container     | `string`  | The selector string of the container, eg. `'#containerId > .items'`.                                        |
 | ajaxRoute     | `string`  | The url-route to be used in the fetch request.                                                              |
-| onSuccess     | `function`| Callback function when the fetch request succeed. The response result is passed as argument    |
+| onSuccess     | `function`| Callback function to handle the response result when the fetch is succeed. The 1st arg is the retrieved result.   |
 
 ### Optiona
 | Config              | Type       | Default     | Description                                                       |
 | ------------------- | :--------: |  :--------: | ----------------------------------------------------------------- |
 | segment             | `int`      |   `1`         | The number of the segment to start with. This option is used when you restore infinite scroll state after page reloading, so you pass the number of the restored segment on the initialization. |
-| segmentParam        | `string`   | `'segment'`   | The name of the segment parameter. In case the segment parameter has different name like `page` |
+| segmentParam        | `string`   | `'segment'`   | The name of the segment parameter other than `segment`, like `page`. |
 | lockInfiniteScroll  | `boolean`  |   `false`     | Lock infinite scroll, so scrolling down won't trigger the fetch function. |
 | autoFill            | `boolean`  |   `true`      | Keep fetching data until the page is filled (ie. scrollbar appear) |
 | fetchOnInitiate     | `boolean`  |   `false`     | Trigger a fetch call directly on initiate with `initial=1` param send in the initial request, so the API endpoint differentiate the initial fetch from normal segment fetch. |
@@ -87,10 +87,115 @@ The configuration in the table is set under loadingIndicator object.
 | type                | `int`      |   1         | <li> 0 => custom indicator, check `html` option bellow </li> <li> 1 => circle spinning dots</li> <li>2 => horizontal animated dots</li> |
 | html                | `string`   |   `''` | The HTML of a custom loading indicator (the class of the outer `<div>` need to be `inf-loading-indicator`). To use this custom indicator the type should be set to 0 |
 
+## API
+### InfiniteScroll
+By default, the package exposes the `InfiniteScroll` class. Here you can find the functions/methods that can be used on the initialized instance of this class.
+```js
+import InfiniteScroll from 'infinite-scroll-init';
+
+let config = {
+    container: '#cards.container',
+    ajaxRoute: '/cards/data',
+    onSuccess: appendCards,
+    loadingIndicator: {
+        active: true,
+        type: 2,
+        color: '#3B9E98',
+    }
+};
+
+// Initialize InfiniteScroll obj
+const infiniteScroll = new InfiniteScroll(config);
+
+// dynamically change some configuration
+config.loadingIndicator.type = 1;
+config.updateParam = (key, value) => sessionStorage.setItem(key, value);
+
+/**
+ * Update the configuration of this instance of InfiniteScroll.
+ */
+infiniteScroll.editConfig(config);
+
+/**
+ * Empty the items container, reset segment to 1, and unlock infinite scroll.
+ */
+infiniteScroll.reset();
+
+/**
+ * Reset segment to 1, and unlock infinite scroll.
+ */
+infiniteScroll.reset(false);
+
+/**
+ * Fetch the next segment of data.
+ */
+infiniteScroll.fetch();
+
+// The fetch function return a promise that resolve
+// to true, if the is more data to fetch.
+// Otherwise it resolve to false.
+infiniteScroll.fetch()
+              .then((moreContent) => {
+                if (moreContent)
+                  //do something
+                else
+                  //do something else
+               });
+              .catch((error) => { ... });
+
+/**
+ * Make consecutive fetches until the page is filled, ie. the scrollbar appear.
+ */
+infiniteScroll.autoFill();
+
+/**
+ * lock the infinite scroll.
+ */
+infiniteScroll.setLockInfiniteScroll(true)
+
+/**
+ * Change segment number
+ */
+infiniteScroll.setSegment(2)
+
+/**
+ * Explicitly add/remove scroll listener that trigger the fetch call.
+ * Normally, you don't need to call these functions, as they are utilized internally.
+ */
+infiniteScroll.addScrollLsn()
+infiniteScroll.removeScrollLsn();
+
+/**
+ * Scroll down to the last three element in the container.
+ * If the autoScroll option is set to true, this will be called internally on initiate.
+ */
+infiniteScroll.scrollDown();
+```
+
+### initLoadingIndicator
+In case you need to use the loading indicator without initializing an infinite scroll. The package exposes the function for initializing it separately. The initialized indicator has the class `inf-loading-indicator`, so it can be hidden/shown by changing the css `display: none | block` externally. The loading configuration are the same. Please find all configuration in previous section.
+```js
+import { initLoadingIndicator } from 'infinite-scroll-init';
+
+// Initialize loading indicator
+initLoadingIndicator({
+    container: '#containerId',
+    color: '#3B9E98',
+    type: 2
+});
+
+// Hide the loading indicator
+$('inf-loading-indicator').css("display", "none");
+```
+
 ## Changes history
 #### TBD
  - `autoFill` should be integrated in `fetch()` function. It works now on initiate with exposed `autoFill()` function, 
    which is the same as `fetch()`, but keep fetching till the page is filled.
+
+#### v3.2
+ - `initLoadingIndicator()` function accepts selector string as container in constructor configuration.
+ - Add constructor / API documentation
 
 #### v3.1
  - Lock infinite scroll when the server return 404 response (indication of no more content to fetch)
