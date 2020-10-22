@@ -5,8 +5,8 @@
 ![NPM](https://img.shields.io/npm/l/infinite-scroll-init)
 
 # Infinite Scroll Init
-Initiate infinite scrolling container `<div>` that consumes content from an API with option for a cool loading indicator 😎.
-The package expose the `InfiniteScroll` class by default, which is used to instantiate the infinite scroll object with the desired configurations. Further, you can use this object to make reset/fetch call (for example when filter is applied), or change the state such as the segment number of other configurations.
+Initiate infinite scrolling container that consumes content from an API with option for a cool loading indicator 😎.
+The package exposes the `InfiniteScroll` class by default, which is used to instantiate the infinite scroll object with the desired configurations. Further, you can use this object to make reset/fetch call (for example when filter is applied), or change the state such as the segment number of other configurations.
 
 The package also expose `initLoadingIndicator` function as a component, that can be used to initiate loading indicator on given container, without having to initiate the infinite scroll. This is used on pages that doesn't require infinite scroll, but a loading indicator is needed.
 
@@ -118,6 +118,7 @@ infiniteScroll.editConfig(config);
 
 /**
  * Empty the items container, reset segment to 1, and unlock infinite scroll.
+ * Normally, this is used when a filter is applied.
  */
 infiniteScroll.reset();
 
