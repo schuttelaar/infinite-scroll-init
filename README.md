@@ -27,7 +27,7 @@ import QueryString from 'query-string-modifier';
 const qs = new QueryString(); 
 
 // Get segment parameter from query string
-let segmentParam = qs.get('page');
+let segmentParam = qs.get('segment');
 let segment = segmentParam && !isNaN(segmentParam)? parseInt(segmentParam) : 1;
 
 // Initialize InfiniteScroll obj
@@ -53,7 +53,39 @@ function appendCards(res) {
     ...
  }
 ```
+## Constructor Configuration
+### Required
+The essential configuration that need to be passed to the constructor in order to have a functional infinite scroll, assuming the requested data in `json` format and no need to preserve the infinite scroll state after page reload.
+| Config        | Type      | Description                                                                                                 |
+| ------------- | :-------: | ----------------------------------------------------------------------------------------------------------- |
+| container     | `string`  | The selector string of the container, eg. `'#containerId > .items'`.                                        |
+| ajaxRoute     | `string`  | The url-route to be used in the fetch request.                                                              |
+| onSuccess     | `function`| Callback function when the fetch request succeed. The response result is passed as argument    |
 
+### Optiona
+| Config              | Type       | Default     | Description                                                       |
+| ------------------- | :--------: |  :--------: | ----------------------------------------------------------------- |
+| segment             | `int`      |   `1`         | The number of the segment to start with. This option is used when you restore infinite scroll state after page reloading, so you pass the number of the restored segment on the initialization. |
+| segmentParam        | `string`   | `'segment'`   | The name of the segment parameter. In case the segment parameter has different name like `page` |
+| lockInfiniteScroll  | `boolean`  |   `false`     | Lock infinite scroll, so scrolling down won't trigger the fetch function. |
+| autoFill            | `boolean`  |   `true`      | Keep fetching data until the page is filled (ie. scrollbar appear) |
+| fetchOnInitiate     | `boolean`  |   `false`     | Trigger a fetch call directly on initiate with `initial=1` param send in the initial request, so the API endpoint differentiate the initial fetch from normal segment fetch. |
+| ajaxDataType        | `string`   |   `json`      | The type of retrieved data from fetch request. |
+| getAjaxData         | `function` |   window's query-string | Function return the data (query string or js object) to be used in the fetch request. The default is the current window's query-string: </br> `() => window.location.search.substr(1)`|
+| onError             | `function` |   `() => {}`  | Callback function when the fetch request failed.  |
+| updateParam         | `function` |   `() => {}`  | Callback function to update the segment state externally (ie. by query-string or session storage). The 1st arg should be the parameter name, and the 2nd arg is the value, `updateParam(segmentParam, segment)`.|
+| loadingIndicator    | `object`   |   inactive    | Please check the configuration of the loading indicator bellow.. |
+
+### Loading indicator
+The configuration in the table is set under loadingIndicator object.
+| Config              | Type       | Default     | Description                                                              |
+| ------------------- | :--------: |  :--------: | ------------------------------------------------------------------------ |
+| active              | `boolean`  |   `false`   | If set to true, a loading indicator will show up during fetch request.   |
+| container           | `string`   |   parent element of infinite-scroll container  | The selector string of the container. |
+| color               | `string`   |`'lightgray'`| The name or hash of the indicator color. |
+| size                | `string`   |   `'0.7em'` | The size of the loading indicator. |
+| type                | `int`      |   1         | <li> 0 => custom indicator, check `html` option bellow </li> <li> 1 => circle spinning dots</li> <li>2 => horizontal animated dots</li> |
+| html                | `string`   |   `''` | The HTML of a custom loading indicator (the class of the outer `<div>` need to be `inf-loading-indicator`). To use this custom indicator the type should be set to 0 |
 
 ## Changes history
 #### TBD

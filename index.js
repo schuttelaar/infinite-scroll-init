@@ -39,7 +39,7 @@ export default class InfiniteScroll {
             autoFill: true,
             autoScroll: false,
             fetchOnInitiate: false,
-            ajaxRoute: '',
+            ajaxRoute: '/',
             ajaxDataType: 'json',
             getAjaxData: () => window.location.search.substr(1),
             onSuccess: () => {},
