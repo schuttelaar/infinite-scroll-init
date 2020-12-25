@@ -55,9 +55,17 @@ export default class InfiniteScroll {
         };
 
         this.editConfig(config);
+
+        //store onScroll function in a local variable so it can be used later on removed
+        this.onScroll = function() {
+            const { scrollHeight, scrollTop, clientHeight } = document.documentElement;
+            if (!this.config.lockInfiniteScroll && (scrollTop + clientHeight > scrollHeight - 5))
+                this.fetch();
+        }
+        this.scrollHandler = this.onScroll.bind(this);
+
         this.addScrollLsn();
         this.$container = document.querySelector(this.config.container);
-        this.currAjax = null;
 
         this.config.loadingIndicator.active &&
             initLoadingIndicator(this.config.loadingIndicator);
@@ -99,26 +107,17 @@ export default class InfiniteScroll {
     }
 
     /**
-     * To handle scroll event on window
-     */
-    scrollHandler() {
-        const { scrollHeight, scrollTop, clientHeight } = document.documentElement;
-        if (!this.config.lockInfiniteScroll && (scrollTop + clientHeight > scrollHeight - 5))
-            this.fetch();
-    }
-
-    /**
      * Add the scroll event listener to this container
      */
     addScrollLsn() {
-        window.addEventListener('scroll', () => this.scrollHandler());
+        window.addEventListener('scroll', this.scrollHandler, true);
     }
 
     /**
      * Remover the scroll listener from this container
      */
     removeScrollLsn() {
-        window.removeEventListener('scroll', () => this.scrollHandler());
+        window.removeEventListener('scroll', this.scrollHandler, true);
     }
 
     /**
