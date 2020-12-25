@@ -10,9 +10,6 @@
         "loading",
         "indicator"
     ],
-    "dependencies": {
-        "jquery": "^3.3.1"
-    },
     "author": "Mahmoud Al-Refaai",
     "license": "MIT"
 }

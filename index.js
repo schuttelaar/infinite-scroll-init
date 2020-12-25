@@ -3,8 +3,6 @@
  * @author Mahmoud Al-Refaai <Schuttelaar & Partners>
  */
 
-import $ from "jquery";
-
 export default class InfiniteScroll {
 
     /**
@@ -48,7 +46,7 @@ export default class InfiniteScroll {
 
             loadingIndicator: {
                 active: false,
-                container: $(config.container).parent(),
+                container: document.querySelector(config.container).parentNode,
                 color: 'lightgray',
                 size: '0.7em',
                 type: 1,
@@ -58,13 +56,13 @@ export default class InfiniteScroll {
 
         this.editConfig(config);
         this.addScrollLsn();
-        this.$container = $(this.config.container);
+        this.$container = document.querySelector(this.config.container);
         this.currAjax = null;
 
         this.config.loadingIndicator.active &&
             initLoadingIndicator(this.config.loadingIndicator);
 
-        this.$loadingIndicator = $('.inf-loading-indicator');
+        this.$loadingIndicator = document.querySelector('.inf-loading-indicator');
 
         // fetch initial data;
         if (this.config.fetchOnInitiate) {
@@ -101,28 +99,33 @@ export default class InfiniteScroll {
     }
 
     /**
+     * To handle scroll event on window
+     */
+    scrollHandler() {
+        const { scrollHeight, scrollTop, clientHeight } = document.documentElement;
+        if (!this.config.lockInfiniteScroll && (scrollTop + clientHeight > scrollHeight - 5))
+            this.fetch();
+    }
+
+    /**
      * Add the scroll event listener to this container
      */
     addScrollLsn() {
-        $(window).on('scroll', () => {
-            if (!this.config.lockInfiniteScroll &&
-                ($(document).scrollTop() + $(window).height()) >= (this.$container.offset().top + this.$container.height() - 100))
-                this.fetch();
-        });
+        window.addEventListener('scroll', () => this.scrollHandler());
     }
 
     /**
      * Remover the scroll listener from this container
      */
     removeScrollLsn() {
-        this.$container.off('scroll');
+        window.removeEventListener('scroll', () => this.scrollHandler());
     }
 
     /**
      * Repeat fetching data until the page is filled (ie. scrollbar is shown).
      */
     autoFill() {
-        if ($(window).height() >= $(document).height()) {
+        if (document.body.clientHeight <= document.documentElement.clientHeight) {
             this.fetch()
                 .then((moreContent) => {
                     //in case there is still more content to fetch, check again if the page is not filled.
@@ -149,8 +152,8 @@ export default class InfiniteScroll {
         if (this.config.lockInfiniteScroll) return;
         this.config.lockInfiniteScroll = true;
 
-        this.config.loadingIndicator.active &&
-            this.$loadingIndicator.removeClass('hide');
+        if (this.config.loadingIndicator.active)
+            this.$loadingIndicator.style.display = 'inherit';
 
         let dataParams = this.config.getAjaxData() || {};
 
@@ -184,43 +187,54 @@ export default class InfiniteScroll {
         // fetch next segment
         dataParams[this.config.segmentParam] = this.config.segment + 1;
 
-        return new Promise((resolve, reject) => {
-            if (this.currAjax) this.currAjax.abort();
-            this.currAjax = $.ajax({
-                url: this.config.ajaxRoute,
+        return fetch(this.config.ajaxRoute + '?' + new URLSearchParams(dataParams), {
                 method: 'GET',
-                data: dataParams,
-                dataType: this.config.ajaxDataType,
-                success: (res, status, XHR) => {
-                    this.config.loadingIndicator.active &&
-                        this.$loadingIndicator.addClass('hide');
-
-                    if ($(res).length) {
-                        const noMoreContent = XHR.getResponseHeader('NoMoreContent');
-                        this.config.segment++;
-                        this.config.updateParam(this.config.segmentParam, this.config.segment);
-
-                        // in case the field 'noMoreContent' doesn't exist, the fallback is falsy value
-                        this.config.lockInfiniteScroll = noMoreContent;
-                        this.config.onSuccess(res);
-                        resolve(!noMoreContent);
-                    } else {
-                        this.config.lockInfiniteScroll = true;
-                        resolve(false);
-                    }
+                headers: {
+                    'Content-Type': this.ajaxDataType == 'html' ? 'text/html' : 'application/json',
                 },
-                error: (XHR, status, err) => {
-                    this.config.loadingIndicator.active &&
-                        this.$loadingIndicator.addClass('hide');
+            })
+            .then(async(response) => {
+                if (response.status != 200)
+                    throw new Error(response.status);
 
-                    if (XHR.status == 404)
-                        this.config.lockInfiniteScroll = true;
+                let res = {};
+                if (this.config.ajaxDataType == 'html')
+                    res = await response.text();
+                else if (this.config.ajaxDataType == 'json')
+                    res = await response.json();
 
-                    this.config.onError(XHR, status, err);
-                    resolve(false);
+                return { res, noMoreContent: !!response.headers.get('NoMoreContent') };
+            })
+            .then(({ res, noMoreContent }) => {
+                if (this.config.loadingIndicator.active)
+                    this.$loadingIndicator.style.display = 'none';
+
+                if (this.config.ajaxDataType == 'html')
+                    res = res.trim();
+
+                if (res.length) {
+                    this.config.segment++;
+                    this.config.updateParam(this.config.segmentParam, this.config.segment);
+
+                    // in case the field 'noMoreContent' doesn't exist, the fallback is falsy value
+                    this.config.lockInfiniteScroll = noMoreContent;
+                    this.config.onSuccess(res);
+                    return !noMoreContent;
+                } else {
+                    this.config.lockInfiniteScroll = true;
+                    return false;
                 }
+            })
+            .catch(err => {
+                if (this.config.loadingIndicator.active)
+                    this.$loadingIndicator.style.display = 'none';
+
+                if (err.message == 404)
+                    this.config.lockInfiniteScroll = true;
+
+                this.config.onError(err);
+                return false;
             });
-        });
     }
     async fetchData() { return this.fetch(); }
 
@@ -243,10 +257,11 @@ export default class InfiniteScroll {
      */
     reset(removeContents = true) {
         if (removeContents) {
-            this.$container.empty();
+            while (this.$container.firstChild)
+                this.$container.removeChild(this.$container.firstChild);
 
-            this.config.loadingIndicator.active &&
-                this.$loadingIndicator.removeClass('hide');
+            if (this.config.loadingIndicator.active)
+                this.$loadingIndicator.style.display = 'inherit';
         }
 
         this.config.fetchOnInitiate = true;
@@ -269,19 +284,19 @@ export function initLoadingIndicator(config) {
     let { container, color = 'lightgray', size = '0.7em', type, html } = config;
 
     if (typeof container === 'string')
-        container = $(container);
+        container = document.querySelector(container);
 
+    let parser = new DOMParser();
+    let doc = '';
     switch (type) {
-        case 0: //custom indicator, just append html to container
-            container.append(html);
+        case 0: //custom indicator, just append html to container, hence no need to override html value
             break;
             //case 1: same as default
         case 2:
-            container.append(`<div style="display: flex; justify-content: center; align-items: center">
-                                <div class="inf-loading-indicator"><div></div><div></div><div></div><div></div></div>
-                              </div>`) &&
-                container.append(`
-                <style>
+            html = `<div style="display: flex; justify-content: center; align-items: center">
+                        <div class="inf-loading-indicator"><div></div><div></div><div></div><div></div></div>
+                    </div> 
+                    <style>
                     .inf-loading-indicator {
                         display: inline-block;
                         position: relative;
@@ -337,82 +352,83 @@ export function initLoadingIndicator(config) {
                         transform: translate(calc(${size} *  1.33), 0);
                         }
                     }      
-                </style>`);
+                    </style>`;
             break;
         default:
-            container.append(`<div style="display: flex; justify-content: center; align-items: center">
-                                <div class="inf-loading-indicator"></div>
-                              </div>`) &&
-                container.append(`
-                <style>
-                    .inf-loading-indicator {
-                        color: ${color};
-                        font-size: ${size};
-                        margin: calc(${size} * 10);
-                        width: calc(${size} * 1.428);
-                        height: calc(${size} * 1.428);
-                        border-radius: 50%;
-                        position: relative;
-                        -webkit-animation: load4 1.3s infinite linear;
-                        animation: load4 1.3s infinite linear;
-                        -webkit-transform: translateZ(0);
-                        -ms-transform: translateZ(0);
-                        transform: translateZ(0);
-                    }
-                    @-webkit-keyframes load4 {
-                        0%,
-                        100% {
-                        box-shadow: 0 -3em 0 0.2em, 2em -2em 0 0em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 0;
+            html = `<div style="display: flex; justify-content: center; align-items: center">
+                        <div class="inf-loading-indicator"></div>
+                    </div>
+                    <style>
+                        .inf-loading-indicator {
+                            color: ${color};
+                            font-size: ${size};
+                            margin: calc(${size} * 10);
+                            width: calc(${size} * 1.428);
+                            height: calc(${size} * 1.428);
+                            border-radius: 50%;
+                            position: relative;
+                            -webkit-animation: load4 1.3s infinite linear;
+                            animation: load4 1.3s infinite linear;
+                            -webkit-transform: translateZ(0);
+                            -ms-transform: translateZ(0);
+                            transform: translateZ(0);
                         }
-                        12.5% {
-                        box-shadow: 0 -3em 0 0, 2em -2em 0 0.2em, 3em 0 0 0, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
+                        @-webkit-keyframes load4 {
+                            0%,
+                            100% {
+                            box-shadow: 0 -3em 0 0.2em, 2em -2em 0 0em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 0;
+                            }
+                            12.5% {
+                            box-shadow: 0 -3em 0 0, 2em -2em 0 0.2em, 3em 0 0 0, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
+                            }
+                            25% {
+                            box-shadow: 0 -3em 0 -0.5em, 2em -2em 0 0, 3em 0 0 0.2em, 2em 2em 0 0, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
+                            }
+                            37.5% {
+                            box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 0, 2em 2em 0 0.2em, 0 3em 0 0em, -2em 2em 0 -1em, -3em 0em 0 -1em, -2em -2em 0 -1em;
+                            }
+                            50% {
+                            box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 0em, 0 3em 0 0.2em, -2em 2em 0 0, -3em 0em 0 -1em, -2em -2em 0 -1em;
+                            }
+                            62.5% {
+                            box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 0, -2em 2em 0 0.2em, -3em 0 0 0, -2em -2em 0 -1em;
+                            }
+                            75% {
+                            box-shadow: 0em -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0.2em, -2em -2em 0 0;
+                            }
+                            87.5% {
+                            box-shadow: 0em -3em 0 0, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0, -2em -2em 0 0.2em;
+                            }
                         }
-                        25% {
-                        box-shadow: 0 -3em 0 -0.5em, 2em -2em 0 0, 3em 0 0 0.2em, 2em 2em 0 0, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
-                        }
-                        37.5% {
-                        box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 0, 2em 2em 0 0.2em, 0 3em 0 0em, -2em 2em 0 -1em, -3em 0em 0 -1em, -2em -2em 0 -1em;
-                        }
-                        50% {
-                        box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 0em, 0 3em 0 0.2em, -2em 2em 0 0, -3em 0em 0 -1em, -2em -2em 0 -1em;
-                        }
-                        62.5% {
-                        box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 0, -2em 2em 0 0.2em, -3em 0 0 0, -2em -2em 0 -1em;
-                        }
-                        75% {
-                        box-shadow: 0em -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0.2em, -2em -2em 0 0;
-                        }
-                        87.5% {
-                        box-shadow: 0em -3em 0 0, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0, -2em -2em 0 0.2em;
-                        }
-                    }
-                    @keyframes load4 {
-                        0%,
-                        100% {
-                        box-shadow: 0 -3em 0 0.2em, 2em -2em 0 0em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 0;
-                        }
-                        12.5% {
-                        box-shadow: 0 -3em 0 0, 2em -2em 0 0.2em, 3em 0 0 0, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
-                        }
-                        25% {
-                        box-shadow: 0 -3em 0 -0.5em, 2em -2em 0 0, 3em 0 0 0.2em, 2em 2em 0 0, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
-                        }
-                        37.5% {
-                        box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 0, 2em 2em 0 0.2em, 0 3em 0 0em, -2em 2em 0 -1em, -3em 0em 0 -1em, -2em -2em 0 -1em;
-                        }
-                        50% {
-                        box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 0em, 0 3em 0 0.2em, -2em 2em 0 0, -3em 0em 0 -1em, -2em -2em 0 -1em;
-                        }
-                        62.5% {
-                        box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 0, -2em 2em 0 0.2em, -3em 0 0 0, -2em -2em 0 -1em;
-                        }
-                        75% {
-                        box-shadow: 0em -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0.2em, -2em -2em 0 0;
-                        }
-                        87.5% {
-                        box-shadow: 0em -3em 0 0, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0, -2em -2em 0 0.2em;
-                        }
-                    }      
-                </style>`);
+                        @keyframes load4 {
+                            0%,
+                            100% {
+                            box-shadow: 0 -3em 0 0.2em, 2em -2em 0 0em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 0;
+                            }
+                            12.5% {
+                            box-shadow: 0 -3em 0 0, 2em -2em 0 0.2em, 3em 0 0 0, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
+                            }
+                            25% {
+                            box-shadow: 0 -3em 0 -0.5em, 2em -2em 0 0, 3em 0 0 0.2em, 2em 2em 0 0, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
+                            }
+                            37.5% {
+                            box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 0, 2em 2em 0 0.2em, 0 3em 0 0em, -2em 2em 0 -1em, -3em 0em 0 -1em, -2em -2em 0 -1em;
+                            }
+                            50% {
+                            box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 0em, 0 3em 0 0.2em, -2em 2em 0 0, -3em 0em 0 -1em, -2em -2em 0 -1em;
+                            }
+                            62.5% {
+                            box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 0, -2em 2em 0 0.2em, -3em 0 0 0, -2em -2em 0 -1em;
+                            }
+                            75% {
+                            box-shadow: 0em -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0.2em, -2em -2em 0 0;
+                            }
+                            87.5% {
+                            box-shadow: 0em -3em 0 0, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0, -2em -2em 0 0.2em;
+                            }
+                        }      
+                    </style>`;
     }
+    doc = parser.parseFromString(html, 'text/html');
+    container.appendChild(doc.body);
 }
