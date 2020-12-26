@@ -1,5 +1,5 @@
 /**
- * @version 3.2
+ * @version 4.0
  * @author Mahmoud Al-Refaai <Schuttelaar & Partners>
  */
 
@@ -13,9 +13,9 @@ export default class InfiniteScroll {
      * @param {Bool} config.lockInfiniteScroll  if set to true, scrolling down won't trigger the fetch function
      * @param {Bool} config.autoFill            boolean weather to keep fetching data until the page is filled (ie. scrollbar appear)
      * @param {Bool} config.fetchOnInitiate     boolean to fetch all data till the specified segment on infinite scroll initiate      
-     * @param {String} config.ajaxRoute         the url-route to be used in AJAX
-     * @param {String} config.ajaxDataType      the data-type of the response of the AJAX request
-     * @param {function} config.getAjaxData     function return the data (query string or object) used in AJAX request
+     * @param {String} config.dataRoute         the url-route to fetch the data from
+     * @param {String} config.dataType          the data-type of the response, ['html' | (default) 'json']
+     * @param {function} config.getDataParams     function return the data (query string or object) used in AJAX request
      * @param {function} config.onSuccess       callback function when AJAX request succeed
      * @param {function} config.onError         callback function when AJAX request failed
      * @param {function} config.updateParam     callback function to update the segment param in query string
@@ -37,12 +37,16 @@ export default class InfiniteScroll {
             autoFill: true,
             autoScroll: false,
             fetchOnInitiate: false,
-            ajaxRoute: '/',
-            ajaxDataType: 'json',
-            getAjaxData: () => window.location.search.substr(1),
+            dataRoute: '',
+            dataType: 'json',
+            getDataParams: () => window.location.search.substr(1),
             onSuccess: () => {},
             onError: () => {},
-            updateParam: () => {},
+            updateParam: (key, value) => {
+                const dataParams = new URLSearchParams(window.location.search);
+                dataParams.set(key, value);
+                history.pushState({}, document.title, window.location.href.split('?')[0] + '?' + decodeURI(dataParams.toString()) + window.location.hash);
+            },
 
             loadingIndicator: {
                 active: false,
@@ -69,7 +73,6 @@ export default class InfiniteScroll {
 
         this.config.loadingIndicator.active &&
             initLoadingIndicator(this.config.loadingIndicator);
-
         this.$loadingIndicator = document.querySelector('.inf-loading-indicator');
 
         // fetch initial data;
@@ -89,7 +92,6 @@ export default class InfiniteScroll {
 
             this.config.autoFill && this.autoFill();
         }
-
 
         // Bind all class' functions to "this"
         const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(this));
@@ -154,29 +156,12 @@ export default class InfiniteScroll {
         if (this.config.loadingIndicator.active)
             this.$loadingIndicator.style.display = 'inherit';
 
-        let dataParams = this.config.getAjaxData() || {};
-
-        //In case getAjaxData return a query string, convert it to object
-        if (typeof dataParams === "string") {
-            let temp = {};
-            dataParams.split('&').forEach(e => {
-                let param = e.split('=');
-                param[0] = decodeURI(param[0]);
-
-                if (param[0].slice(-2) === "[]") {
-                    if (!temp[param[0]]) temp[param[0]] = [];
-                    temp[param[0]].push(decodeURI(param[1]));
-                } else {
-                    temp[param[0]] = decodeURI(param[1]);
-                }
-            });
-            dataParams = temp;
-        }
+        const dataParams = new URLSearchParams(this.config.getDataParams());
 
         //Add initial param if this an initial fetch (on page load)
         if (this.config.fetchOnInitiate) {
-            this.config.fetchOnInitiate = !this.config.fetchOnInitiate;
-            dataParams.initial = 1;
+            this.config.fetchOnInitiate = false;
+            dataParams.set('initial', 1);
 
             // Since this is an initial fetch, we don't need segment to increase,
             // so decrease here to cancel out with the increase in response callback.
@@ -184,12 +169,12 @@ export default class InfiniteScroll {
         }
 
         // fetch next segment
-        dataParams[this.config.segmentParam] = this.config.segment + 1;
+        dataParams.set(this.config.segmentParam, this.config.segment + 1);
 
-        return fetch(this.config.ajaxRoute + '?' + new URLSearchParams(dataParams), {
+        return fetch(this.config.dataRoute + '?' + dataParams.toString(), {
                 method: 'GET',
                 headers: {
-                    'Content-Type': this.ajaxDataType == 'html' ? 'text/html' : 'application/json',
+                    'Content-Type': this.dataType == 'html' ? 'text/html' : 'application/json',
                 },
             })
             .then(async(response) => {
@@ -197,9 +182,9 @@ export default class InfiniteScroll {
                     throw new Error(response.status);
 
                 let res = {};
-                if (this.config.ajaxDataType == 'html')
+                if (this.config.dataType == 'html')
                     res = await response.text();
-                else if (this.config.ajaxDataType == 'json')
+                else if (this.config.dataType == 'json')
                     res = await response.json();
 
                 return { res, noMoreContent: !!response.headers.get('NoMoreContent') };
@@ -208,7 +193,7 @@ export default class InfiniteScroll {
                 if (this.config.loadingIndicator.active)
                     this.$loadingIndicator.style.display = 'none';
 
-                if (this.config.ajaxDataType == 'html')
+                if (this.config.dataType == 'html')
                     res = res.trim();
 
                 if (res.length) {
@@ -235,7 +220,6 @@ export default class InfiniteScroll {
                 return false;
             });
     }
-    async fetchData() { return this.fetch(); }
 
     /**
      * @param {boolean} lock set to false to unlock the infinite scroll.
@@ -285,149 +269,148 @@ export function initLoadingIndicator(config) {
     if (typeof container === 'string')
         container = document.querySelector(container);
 
-    let parser = new DOMParser();
-    let doc = '';
     switch (type) {
         case 0: //custom indicator, just append html to container, hence no need to override html value
             break;
             //case 1: same as default
         case 2:
             html = `<div style="display: flex; justify-content: center; align-items: center">
-                        <div class="inf-loading-indicator"><div></div><div></div><div></div><div></div></div>
-                    </div> 
-                    <style>
-                    .inf-loading-indicator {
-                        display: inline-block;
-                        position: relative;
-                        width: calc(${size} * 4.7);
-                        height: calc(${size} * 5);
-                    }
-                    .inf-loading-indicator div {
-                        position: absolute;
-                        top: calc(${size} * 2);
-                        width: ${size};
-                        height: ${size};
-                        border-radius: 50%;
-                        background: ${color};
-                        animation-timing-function: cubic-bezier(0, 1, 1, 0);
-                    }
-                    .inf-loading-indicator div:nth-child(1) {
-                        left: calc(${size} *  0.44);
-                        animation: inf-loading-indicator1 0.6s infinite;
-                    }
-                    .inf-loading-indicator div:nth-child(2) {
-                        left: calc(${size} *  0.44);
-                        animation: inf-loading-indicator2 0.6s infinite;
-                    }
-                    .inf-loading-indicator div:nth-child(3) {
-                        left: calc(${size} *  1.77);
-                        animation: inf-loading-indicator2 0.6s infinite;
-                    }
-                    .inf-loading-indicator div:nth-child(4) {
-                        left: calc(${size} *  3.11);
-                        animation: inf-loading-indicator3 0.6s infinite;
-                    }
-                    @keyframes inf-loading-indicator1 {
-                        0% {
-                        transform: scale(0);
-                        }
-                        100% {
-                        transform: scale(1);
-                        }
-                    }
-                    @keyframes inf-loading-indicator3 {
-                        0% {
-                        transform: scale(1);
-                        }
-                        100% {
-                        transform: scale(0);
-                        }
-                    }
-                    @keyframes inf-loading-indicator2 {
-                        0% {
-                        transform: translate(0, 0);
-                        }
-                        100% {
-                        transform: translate(calc(${size} *  1.33), 0);
-                        }
-                    }      
-                    </style>`;
+                        <div class="inf-loading-indicator"><div></div><div></div><div></div><div></div></div> 
+                        <style>
+                            .inf-loading-indicator {
+                                display: inline-block;
+                                position: relative;
+                                width: calc(${size} * 4.7);
+                                height: calc(${size} * 5);
+                            }
+                            .inf-loading-indicator div {
+                                position: absolute;
+                                top: calc(${size} * 2);
+                                width: ${size};
+                                height: ${size};
+                                border-radius: 50%;
+                                background: ${color};
+                                animation-timing-function: cubic-bezier(0, 1, 1, 0);
+                            }
+                            .inf-loading-indicator div:nth-child(1) {
+                                left: calc(${size} *  0.44);
+                                animation: inf-loading-indicator1 0.6s infinite;
+                            }
+                            .inf-loading-indicator div:nth-child(2) {
+                                left: calc(${size} *  0.44);
+                                animation: inf-loading-indicator2 0.6s infinite;
+                            }
+                            .inf-loading-indicator div:nth-child(3) {
+                                left: calc(${size} *  1.77);
+                                animation: inf-loading-indicator2 0.6s infinite;
+                            }
+                            .inf-loading-indicator div:nth-child(4) {
+                                left: calc(${size} *  3.11);
+                                animation: inf-loading-indicator3 0.6s infinite;
+                            }
+                            @keyframes inf-loading-indicator1 {
+                                0% {
+                                transform: scale(0);
+                                }
+                                100% {
+                                transform: scale(1);
+                                }
+                            }
+                            @keyframes inf-loading-indicator3 {
+                                0% {
+                                transform: scale(1);
+                                }
+                                100% {
+                                transform: scale(0);
+                                }
+                            }
+                            @keyframes inf-loading-indicator2 {
+                                0% {
+                                transform: translate(0, 0);
+                                }
+                                100% {
+                                transform: translate(calc(${size} *  1.33), 0);
+                                }
+                            }      
+                        </style>
+                    </div>`;
             break;
         default:
             html = `<div style="display: flex; justify-content: center; align-items: center">
                         <div class="inf-loading-indicator"></div>
-                    </div>
-                    <style>
-                        .inf-loading-indicator {
-                            color: ${color};
-                            font-size: ${size};
-                            margin: calc(${size} * 10);
-                            width: calc(${size} * 1.428);
-                            height: calc(${size} * 1.428);
-                            border-radius: 50%;
-                            position: relative;
-                            -webkit-animation: load4 1.3s infinite linear;
-                            animation: load4 1.3s infinite linear;
-                            -webkit-transform: translateZ(0);
-                            -ms-transform: translateZ(0);
-                            transform: translateZ(0);
-                        }
-                        @-webkit-keyframes load4 {
-                            0%,
-                            100% {
-                            box-shadow: 0 -3em 0 0.2em, 2em -2em 0 0em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 0;
+                        <style>
+                            .inf-loading-indicator {
+                                color: ${color};
+                                font-size: ${size};
+                                margin: calc(${size} * 10);
+                                width: calc(${size} * 1.428);
+                                height: calc(${size} * 1.428);
+                                border-radius: 50%;
+                                position: relative;
+                                -webkit-animation: load4 1.3s infinite linear;
+                                animation: load4 1.3s infinite linear;
+                                -webkit-transform: translateZ(0);
+                                -ms-transform: translateZ(0);
+                                transform: translateZ(0);
                             }
-                            12.5% {
-                            box-shadow: 0 -3em 0 0, 2em -2em 0 0.2em, 3em 0 0 0, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
+                            @-webkit-keyframes load4 {
+                                0%,
+                                100% {
+                                box-shadow: 0 -3em 0 0.2em, 2em -2em 0 0em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 0;
+                                }
+                                12.5% {
+                                box-shadow: 0 -3em 0 0, 2em -2em 0 0.2em, 3em 0 0 0, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
+                                }
+                                25% {
+                                box-shadow: 0 -3em 0 -0.5em, 2em -2em 0 0, 3em 0 0 0.2em, 2em 2em 0 0, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
+                                }
+                                37.5% {
+                                box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 0, 2em 2em 0 0.2em, 0 3em 0 0em, -2em 2em 0 -1em, -3em 0em 0 -1em, -2em -2em 0 -1em;
+                                }
+                                50% {
+                                box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 0em, 0 3em 0 0.2em, -2em 2em 0 0, -3em 0em 0 -1em, -2em -2em 0 -1em;
+                                }
+                                62.5% {
+                                box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 0, -2em 2em 0 0.2em, -3em 0 0 0, -2em -2em 0 -1em;
+                                }
+                                75% {
+                                box-shadow: 0em -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0.2em, -2em -2em 0 0;
+                                }
+                                87.5% {
+                                box-shadow: 0em -3em 0 0, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0, -2em -2em 0 0.2em;
+                                }
                             }
-                            25% {
-                            box-shadow: 0 -3em 0 -0.5em, 2em -2em 0 0, 3em 0 0 0.2em, 2em 2em 0 0, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
-                            }
-                            37.5% {
-                            box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 0, 2em 2em 0 0.2em, 0 3em 0 0em, -2em 2em 0 -1em, -3em 0em 0 -1em, -2em -2em 0 -1em;
-                            }
-                            50% {
-                            box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 0em, 0 3em 0 0.2em, -2em 2em 0 0, -3em 0em 0 -1em, -2em -2em 0 -1em;
-                            }
-                            62.5% {
-                            box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 0, -2em 2em 0 0.2em, -3em 0 0 0, -2em -2em 0 -1em;
-                            }
-                            75% {
-                            box-shadow: 0em -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0.2em, -2em -2em 0 0;
-                            }
-                            87.5% {
-                            box-shadow: 0em -3em 0 0, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0, -2em -2em 0 0.2em;
-                            }
-                        }
-                        @keyframes load4 {
-                            0%,
-                            100% {
-                            box-shadow: 0 -3em 0 0.2em, 2em -2em 0 0em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 0;
-                            }
-                            12.5% {
-                            box-shadow: 0 -3em 0 0, 2em -2em 0 0.2em, 3em 0 0 0, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
-                            }
-                            25% {
-                            box-shadow: 0 -3em 0 -0.5em, 2em -2em 0 0, 3em 0 0 0.2em, 2em 2em 0 0, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
-                            }
-                            37.5% {
-                            box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 0, 2em 2em 0 0.2em, 0 3em 0 0em, -2em 2em 0 -1em, -3em 0em 0 -1em, -2em -2em 0 -1em;
-                            }
-                            50% {
-                            box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 0em, 0 3em 0 0.2em, -2em 2em 0 0, -3em 0em 0 -1em, -2em -2em 0 -1em;
-                            }
-                            62.5% {
-                            box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 0, -2em 2em 0 0.2em, -3em 0 0 0, -2em -2em 0 -1em;
-                            }
-                            75% {
-                            box-shadow: 0em -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0.2em, -2em -2em 0 0;
-                            }
-                            87.5% {
-                            box-shadow: 0em -3em 0 0, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0, -2em -2em 0 0.2em;
-                            }
-                        }      
-                    </style>`;
+                            @keyframes load4 {
+                                0%,
+                                100% {
+                                box-shadow: 0 -3em 0 0.2em, 2em -2em 0 0em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 0;
+                                }
+                                12.5% {
+                                box-shadow: 0 -3em 0 0, 2em -2em 0 0.2em, 3em 0 0 0, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
+                                }
+                                25% {
+                                box-shadow: 0 -3em 0 -0.5em, 2em -2em 0 0, 3em 0 0 0.2em, 2em 2em 0 0, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
+                                }
+                                37.5% {
+                                box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 0, 2em 2em 0 0.2em, 0 3em 0 0em, -2em 2em 0 -1em, -3em 0em 0 -1em, -2em -2em 0 -1em;
+                                }
+                                50% {
+                                box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 0em, 0 3em 0 0.2em, -2em 2em 0 0, -3em 0em 0 -1em, -2em -2em 0 -1em;
+                                }
+                                62.5% {
+                                box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 0, -2em 2em 0 0.2em, -3em 0 0 0, -2em -2em 0 -1em;
+                                }
+                                75% {
+                                box-shadow: 0em -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0.2em, -2em -2em 0 0;
+                                }
+                                87.5% {
+                                box-shadow: 0em -3em 0 0, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0, -2em -2em 0 0.2em;
+                                }
+                            }      
+                        </style>
+                    </div>`;
     }
-    doc = parser.parseFromString(html, 'text/html');
-    container.appendChild(doc.body);
+    let parser = new DOMParser();
+    let doc = parser.parseFromString(html, 'text/html');
+    container.append(doc.body.firstChild);
 }
