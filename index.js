@@ -30,7 +30,7 @@ export default class InfiniteScroll {
      * @param {Bool} config.loadMoreIndicator.active        boolean whether to use load more indicator when there is more content to fetch, default = false
      * @param {String} config.loadMoreIndicator.container   string for query selector of container, default is the parent of config.container passed above
      * @param {String} config.loadMoreIndicator.color       string indicate the color hash or color name
-     * @param {String} config.loadMoreIndicator.scale       string with number + unit (eg. '20px', '0.7em')
+     * @param {String} config.loadMoreIndicator.scale       integer to specify the scale of the indicator icon, default = 5
      * @param {function} config.loadMoreIndicator.onHover   function that fire on 'mouseover' over load-more-indicator, default = this.autoFill()
      * @param {String} config.loadMoreIndicator.html        string with HTML of custom load-more indicator (Note: class of outer div need to be 'inf-load-more-indicator'), 
      *                                                      if this not used, the default load-more icon will be used.
@@ -69,7 +69,7 @@ export default class InfiniteScroll {
                 color: 'lightgray',
                 scale: 5,
                 html: '',
-                onHover: () => this.autoFill(),
+                onHover: () => this.fetch(),
             },
         };
 
@@ -416,38 +416,8 @@ export function initLoadingIndicator(config) {
                                 height: calc(${size} * 1.428);
                                 border-radius: 50%;
                                 position: relative;
-                                -webkit-animation: load4 1.3s infinite linear;
                                 animation: load4 1.3s infinite linear;
-                                -webkit-transform: translateZ(0);
-                                -ms-transform: translateZ(0);
                                 transform: translateZ(0);
-                            }
-                            @-webkit-keyframes load4 {
-                                0%,
-                                100% {
-                                box-shadow: 0 -3em 0 0.2em, 2em -2em 0 0em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 0;
-                                }
-                                12.5% {
-                                box-shadow: 0 -3em 0 0, 2em -2em 0 0.2em, 3em 0 0 0, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
-                                }
-                                25% {
-                                box-shadow: 0 -3em 0 -0.5em, 2em -2em 0 0, 3em 0 0 0.2em, 2em 2em 0 0, 0 3em 0 -1em, -2em 2em 0 -1em, -3em 0 0 -1em, -2em -2em 0 -1em;
-                                }
-                                37.5% {
-                                box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 0, 2em 2em 0 0.2em, 0 3em 0 0em, -2em 2em 0 -1em, -3em 0em 0 -1em, -2em -2em 0 -1em;
-                                }
-                                50% {
-                                box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 0em, 0 3em 0 0.2em, -2em 2em 0 0, -3em 0em 0 -1em, -2em -2em 0 -1em;
-                                }
-                                62.5% {
-                                box-shadow: 0 -3em 0 -1em, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 0, -2em 2em 0 0.2em, -3em 0 0 0, -2em -2em 0 -1em;
-                                }
-                                75% {
-                                box-shadow: 0em -3em 0 -1em, 2em -2em 0 -1em, 3em 0em 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0.2em, -2em -2em 0 0;
-                                }
-                                87.5% {
-                                box-shadow: 0em -3em 0 0, 2em -2em 0 -1em, 3em 0 0 -1em, 2em 2em 0 -1em, 0 3em 0 -1em, -2em 2em 0 0, -3em 0em 0 0, -2em -2em 0 0.2em;
-                                }
                             }
                             @keyframes load4 {
                                 0%,
@@ -513,14 +483,11 @@ export function initLoadMoreIndicator(config) {
                             <use x="0" y="5" xlink:href="#a" fill="${color}" transform="scale(${scale})"/>
                         </svg>
                     </div>`;
-
     let parser = new DOMParser();
     let doc = parser.parseFromString(html, 'text/html');
-
     doc.body.firstChild.addEventListener('mouseover', (e) => {
         e.currentTarget.style.display = 'none';
         onHover();
     })
-
     container.append(doc.body.firstChild);
 }

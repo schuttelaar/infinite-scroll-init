@@ -43,6 +43,10 @@ const infiniteScroll = new InfiniteScroll({
     loadingIndicator: {
         active: true,
         color: '#3B9E98',
+    },
+    loadMoreIndicator: {
+        active: true,
+        color: '#3B9E98',
     }
 });
 
@@ -75,9 +79,10 @@ The essential configuration that need to be passed to the constructor in order t
 | onError             | `function` |   `() => {}`  | Callback function when the fetch request failed.  |
 | updateParam         | `function` |   modify window's query-string  | Callback function to update the segment param state externally (ie. on local query-string or session storage). The 1st arg should be the parameter key, and the 2nd arg is the value, `updateParam(segmentParam, segment)`.|
 | loadingIndicator    | `object`   |   inactive    | Please check the configuration of the loading indicator bellow.. |
+| loadMoreIndicator   | `object`   |   inactive    | Please check the configuration of the load-more indicator bellow.. |
 
 ### Loading indicator
-The configuration in the table is set under loadingIndicator object.
+The configuration in the table is set under loadingIndicator object, or need to pass as config object to `initLoadingIndicator` function for separate use.
 | Config              | Type       | Default     | Description                                                              |
 | ------------------- | :--------: |  :--------: | ------------------------------------------------------------------------ |
 | active              | `boolean`  |   `false`   | If set to true, a loading indicator will show up during fetch request.   |
@@ -86,6 +91,17 @@ The configuration in the table is set under loadingIndicator object.
 | size                | `string`   |   `'0.7em'` | The size of the loading indicator. |
 | type                | `int`      |   1         | <li> 0 => custom indicator, check `html` option bellow </li> <li> 1 => circle spinning dots</li> <li>2 => horizontal animated dots</li> |
 | html                | `string`   |   `''` | The HTML of a custom loading indicator (the class of the outer `<div>` need to be `inf-loading-indicator`). To use this custom indicator the type should be set to 0 |
+
+### Load-more indicator
+The configuration in the table is set under loadMoreIndicator object, or need to pass as config object to `initLoadMoreIndicator` function for separate use. The purpose of this indicator is when a filter is applied with container get emptied, the fetched content might not fill the page (ie. no scroll event can happen), so this will be indicator that more content can be fetched and `onHover` function will explicitly trigger `fetch` to render the next segment without the need for a scroll event.
+| Config              | Type       | Default     | Description                                                              |
+| ------------------- | :--------: |  :--------: | ------------------------------------------------------------------------ |
+| active              | `boolean`  |   `false`   | If set to true, a load-more indicator will show up under each segment.   |
+| container           | `string`   |   parent element of infinite-scroll container  | The selector string of the container. |
+| color               | `string`   |`'lightgray'`| The name or hash of the indicator color. |
+| scale               | `int`      |   `5` | The scale of the indicator icon |
+| onHover             | `function` |   `() => this.fetch()`   |  function that fire on 'mouseover' over load-more-indicator |
+| html                | `string`   |   `''` | The HTML of a custom loading indicator (the class of the outer `<div>` need to be `inf-load-more-indicator`). If this is left empty, the default load-more icon will be used. |
 
 ## API v4
 ### InfiniteScroll
@@ -100,6 +116,10 @@ let config = {
     loadingIndicator: {
         active: true,
         type: 2,
+        color: '#3B9E98',
+    },
+    loadMoreIndicator: {
+        active: true,
         color: '#3B9E98',
     }
 };
@@ -188,9 +208,12 @@ $('inf-loading-indicator').css("display", "none");
 ```
 
 ## Changes history
-#### TBD
- - `autoFill` should be integrated in `fetch()` function. It works now on initiate with exposed `autoFill()` function, 
-   which is the same as `fetch()`, but keep fetching till the page is filled.
+#### v4.0
+ - Remove jQuery, drop out IE support
+ - Fetch and cache next segment ahead, so the current segment is always available in session storage to be rendered on scroll event
+ - No need for using NoMoreContent in response header, as the new mechanism always include look ahead for next segment, hence check if there is indeed more content.
+ - Add loadMoreIndicator to show off that there is more content to be fetched and this will explicitly trigger `fetch()` for next segment on hover/mouseover, in case scroll event can't happen because fetched content didn't fill the page or any other reason. Check constructor configuration section.
+ - `initLoadMoreIndicator` as exposed function for separate use
 
 #### v3.2
  - `initLoadingIndicator()` function accepts selector string as container in constructor configuration.
