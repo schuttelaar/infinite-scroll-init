@@ -82,6 +82,7 @@ export default class InfiniteScroll {
                 this.fetch();
         }
         this.scrollHandler = this.onScroll.bind(this);
+        this.abortController = new AbortController();
 
         this.addScrollLsn();
         this.$container = document.querySelector(this.config.container);
@@ -166,7 +167,7 @@ export default class InfiniteScroll {
     }
 
     /**
-     * preform ajax request through the given route in constructor
+     * preform fetch request to the given route and with dataParams given in constructor's config
      */
     async fetch() {
         if (this.config.lockInfiniteScroll) return;
@@ -178,6 +179,56 @@ export default class InfiniteScroll {
         if (this.config.loadingIndicator.active)
             this.$loadingIndicator.style.display = 'inherit';
 
+        //Add initial param if this an initial fetch (on page load)
+        if (this.config.fetchOnInitiate) {
+            res = await this.cacheNextSegment();
+            if (!res.length) return;
+        }
+
+        //increase and update segment state
+        this.config.segment++;
+        this.config.updateParam(this.config.segmentParam, this.config.segment);
+
+        //render cached data
+        let res = sessionStorage.getItem('infiniteScrollData');
+        if (this.config.dataType == 'json')
+            res = JSON.parse(res);
+
+        this.config.onSuccess(res);
+
+        //look up and cache the next segment, return weather there is moreContent or not
+        return this.cacheNextSegment()
+            .then(res => {
+                if (res.length) {
+                    this.config.lockInfiniteScroll = false;
+
+                    if (this.config.loadMoreIndicator.active)
+                        this.$loadMoreIndicator.style.display = 'flex';
+
+                    return true;
+                } else {
+                    this.config.lockInfiniteScroll = true;
+                    return false;
+                }
+            })
+            .catch(err => {
+                if (this.config.loadingIndicator.active)
+                    this.$loadingIndicator.style.display = 'none';
+
+                if (err.message == 404)
+                    this.config.lockInfiniteScroll = true;
+
+                this.config.onError(err);
+                return false;
+            });
+    }
+
+    /**
+     * look up the next segment and store it in cache (session storage)
+     */
+    async cacheNextSegment() {
+        this.abortController.abort();
+        this.abortController = new AbortController();
         const dataParams = new URLSearchParams(this.config.getDataParams());
 
         //Add initial param if this an initial fetch (on page load)
@@ -198,43 +249,32 @@ export default class InfiniteScroll {
                 headers: {
                     'Content-Type': this.dataType == 'html' ? 'text/html' : 'application/json',
                 },
+                signal: this.abortController.signal
             })
             .then(async(response) => {
                 if (response.status != 200)
                     throw new Error(response.status);
 
                 let res = {};
-                if (this.config.dataType == 'html')
+                if (this.config.dataType == 'html') {
                     res = await response.text();
-                else if (this.config.dataType == 'json')
+                    res = res.trim();
+                    sessionStorage.setItem('infiniteScrollData', res);
+                } else if (this.config.dataType == 'json') {
                     res = await response.json();
+                    sessionStorage.setItem('infiniteScrollData', JSON.stringify(res));
+                }
 
-                return { res, noMoreContent: !!response.headers.get('NoMoreContent') };
-            })
-            .then(({ res, noMoreContent }) => {
                 if (this.config.loadingIndicator.active)
                     this.$loadingIndicator.style.display = 'none';
 
-                if (this.config.dataType == 'html')
-                    res = res.trim();
-
-                if (res.length) {
-                    this.config.segment++;
-                    this.config.updateParam(this.config.segmentParam, this.config.segment);
-
-                    // in case the field 'noMoreContent' doesn't exist, the fallback is falsy value
-                    this.config.lockInfiniteScroll = noMoreContent;
-                    this.config.onSuccess(res);
-
-                    if (this.config.loadMoreIndicator.active)
-                        this.$loadMoreIndicator.style.display = 'flex';
-                    return !noMoreContent;
-                } else {
-                    this.config.lockInfiniteScroll = true;
-                    return false;
-                }
+                return res;
             })
             .catch(err => {
+                if (err.name === "AbortError") {
+                    return [];
+                }
+
                 if (this.config.loadingIndicator.active)
                     this.$loadingIndicator.style.display = 'none';
 
@@ -242,7 +282,7 @@ export default class InfiniteScroll {
                     this.config.lockInfiniteScroll = true;
 
                 this.config.onError(err);
-                return false;
+                return [];
             });
     }
 
@@ -275,6 +315,7 @@ export default class InfiniteScroll {
                 this.$loadMoreIndicator.style.display = 'none';
         }
 
+        this.abortController.abort();
         this.config.fetchOnInitiate = true;
         this.config.lockInfiniteScroll = false;
         this.config.segment = 1;
