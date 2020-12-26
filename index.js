@@ -1,5 +1,5 @@
 /**
- * @version 4.0
+ * @version 3.2
  * @author Mahmoud Al-Refaai <Schuttelaar & Partners>
  */
 
@@ -25,8 +25,15 @@ export default class InfiniteScroll {
      * @param {String} config.loadingIndicator.color        string indicate the color hash or color name
      * @param {String} config.loadingIndicator.size         string with number + unit (eg. '20px', '0.7em')
      * @param {int} config.loadingIndicator.type            type of indicator [0 => custom, 1 => circle spinning dots, 2 => horizontal dots], default set to 1
-     * @param {String} config.loadingIndicator.html         string with HTML of custom loading indicator (class of outer div need to be 'inf-loading-indicator'), 
+     * @param {String} config.loadingIndicator.html         string with HTML of custom loading indicator (Note: class of outer div need to be 'inf-loading-indicator'), 
      *                                                      to use this custom indicator the type should be set to 0.
+     * @param {Bool} config.loadMoreIndicator.active        boolean whether to use load more indicator when there is more content to fetch, default = false
+     * @param {String} config.loadMoreIndicator.container   string for query selector of container, default is the parent of config.container passed above
+     * @param {String} config.loadMoreIndicator.color       string indicate the color hash or color name
+     * @param {String} config.loadMoreIndicator.scale       string with number + unit (eg. '20px', '0.7em')
+     * @param {function} config.loadMoreIndicator.onHover   function that fire on 'mouseover' over load-more-indicator, default = this.autoFill()
+     * @param {String} config.loadMoreIndicator.html        string with HTML of custom load-more indicator (Note: class of outer div need to be 'inf-load-more-indicator'), 
+     *                                                      if this not used, the default load-more icon will be used.
      */
     constructor(config) {
         this.config = {
@@ -56,6 +63,14 @@ export default class InfiniteScroll {
                 type: 1,
                 html: '', //if type == 0, this html will be used as custom indicator and no style will be applied.
             },
+            loadMoreIndicator: {
+                active: false,
+                container: document.querySelector(config.container).parentNode,
+                color: 'lightgray',
+                scale: 5,
+                html: '',
+                onHover: () => this.autoFill(),
+            },
         };
 
         this.editConfig(config);
@@ -74,6 +89,10 @@ export default class InfiniteScroll {
         this.config.loadingIndicator.active &&
             initLoadingIndicator(this.config.loadingIndicator);
         this.$loadingIndicator = document.querySelector('.inf-loading-indicator');
+
+        this.config.loadMoreIndicator.active &&
+            initLoadMoreIndicator(this.config.loadMoreIndicator);
+        this.$loadMoreIndicator = document.querySelector('.inf-load-more-indicator');
 
         // fetch initial data;
         if (this.config.fetchOnInitiate) {
@@ -153,6 +172,9 @@ export default class InfiniteScroll {
         if (this.config.lockInfiniteScroll) return;
         this.config.lockInfiniteScroll = true;
 
+        if (this.config.loadMoreIndicator.active)
+            this.$loadMoreIndicator.style.display = 'none';
+
         if (this.config.loadingIndicator.active)
             this.$loadingIndicator.style.display = 'inherit';
 
@@ -203,6 +225,9 @@ export default class InfiniteScroll {
                     // in case the field 'noMoreContent' doesn't exist, the fallback is falsy value
                     this.config.lockInfiniteScroll = noMoreContent;
                     this.config.onSuccess(res);
+
+                    if (this.config.loadMoreIndicator.active)
+                        this.$loadMoreIndicator.style.display = 'flex';
                     return !noMoreContent;
                 } else {
                     this.config.lockInfiniteScroll = true;
@@ -245,6 +270,9 @@ export default class InfiniteScroll {
 
             if (this.config.loadingIndicator.active)
                 this.$loadingIndicator.style.display = 'inherit';
+
+            if (this.config.loadMoreIndicator.active)
+                this.$loadMoreIndicator.style.display = 'none';
         }
 
         this.config.fetchOnInitiate = true;
@@ -412,5 +440,46 @@ export function initLoadingIndicator(config) {
     }
     let parser = new DOMParser();
     let doc = parser.parseFromString(html, 'text/html');
+    container.append(doc.body.firstChild);
+}
+
+/**
+ * Initiate loading indicator through injecting the required HTML with 
+ * the corresponding CSS as a <style> tag to the specified container.
+ * @param {Bool} config.active         boolean whether to use loading indicator while fetching, default = false
+ * @param {String} config.container    string for query selector of container, default is the parent of config.container passed above
+ * @param {String} config.color        string indicate the color hash or color name
+ * @param {String} config.scale         string with number + unit (eg. '20px', '0.7em')
+ * @param {String} config.html         string with HTML of custom loading indicator (class of outer div need to be 'inf-loading-indicator'),                                                       to use this custom indicator the type should be set to 0.
+ */
+export function initLoadMoreIndicator(config) {
+    let { container, color = 'lightgray', scale = 5, html, onHover = () => {} } = config;
+
+    if (typeof container === 'string')
+        container = document.querySelector(container);
+
+    html = html || `<div class="inf-load-more-indicator" style="display: flex; justify-content: center; align-items: center; padding: 50px">
+                        <svg width="${13.415 * scale}" height="${13.122 * scale}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                            <defs>
+                                <polygon id="a" points="12,        0
+                                                        13.414214, 1.4142136 
+                                                        6.707107,  8.1213204 
+                                                        0,         1.4142136 
+                                                        1.414214,  0 
+                                                        6.707107,  5.2928932"></polygon>
+                            </defs>
+                            <use x="0" y="0" xlink:href="#a" fill="${color}" transform="scale(${scale})"/>
+                            <use x="0" y="5" xlink:href="#a" fill="${color}" transform="scale(${scale})"/>
+                        </svg>
+                    </div>`;
+
+    let parser = new DOMParser();
+    let doc = parser.parseFromString(html, 'text/html');
+
+    doc.body.firstChild.addEventListener('mouseover', (e) => {
+        e.currentTarget.style.display = 'none';
+        onHover();
+    })
+
     container.append(doc.body.firstChild);
 }
