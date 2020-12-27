@@ -15,7 +15,7 @@ export default class InfiniteScroll {
      * @param {Bool} config.fetchOnInitiate     boolean to fetch all data till the specified segment on infinite scroll initiate      
      * @param {String} config.dataRoute         the url-route to fetch the data from
      * @param {String} config.dataType          the data-type of the response, ['html' | (default) 'json']
-     * @param {function} config.getDataParams     function return the data (query string or object) used in AJAX request
+     * @param {function} config.getDataParams   function return the data (query string or object) used in AJAX request
      * @param {function} config.onSuccess       callback function when AJAX request succeed
      * @param {function} config.onError         callback function when AJAX request failed
      * @param {function} config.updateParam     callback function to update the segment param in query string
@@ -31,6 +31,7 @@ export default class InfiniteScroll {
      * @param {String} config.loadMoreIndicator.container   string for query selector of container, default is the parent of config.container passed above
      * @param {String} config.loadMoreIndicator.color       string indicate the color hash or color name
      * @param {String} config.loadMoreIndicator.scale       integer to specify the scale of the indicator icon, default = 5
+     * @param {Bool} config.loadMoreIndicator.animated      boolean weather to animate load-more indicator, default = true
      * @param {function} config.loadMoreIndicator.onHover   function that fire on 'mouseover' over load-more-indicator, default = this.autoFill()
      * @param {String} config.loadMoreIndicator.html        string with HTML of custom load-more indicator (Note: class of outer div need to be 'inf-load-more-indicator'), 
      *                                                      if this not used, the default load-more icon will be used.
@@ -69,6 +70,7 @@ export default class InfiniteScroll {
                 color: 'lightgray',
                 scale: 5,
                 html: '',
+                animated: true,
                 onHover: () => this.fetch(),
             },
         };
@@ -464,57 +466,70 @@ export function initLoadingIndicator(config) {
  * @param {String} config.html         string with HTML of custom loading indicator (class of outer div need to be 'inf-loading-indicator'),                                                       to use this custom indicator the type should be set to 0.
  */
 export function initLoadMoreIndicator(config) {
-    let { container, color = 'lightgray', scale = 5, html, onHover = () => {} } = config;
+    let { container, color = 'lightgray', scale = 5, html, animated = true, onHover = () => {} } = config;
 
     if (typeof container === 'string')
         container = document.querySelector(container);
 
-    html = html || `<div class="inf-load-more-indicator" style="display: flex; justify-content: center; align-items: center; padding: 50px">
-                        <svg width="${13.415 * scale}" height="${14 * scale}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-                            <defs>
-                                <polygon id="a" points="12,        0
-                                                        13.414214, 1.4142136 
-                                                        6.707107,  8.1213204 
-                                                        0,         1.4142136 
-                                                        1.414214,  0 
-                                                        6.707107,  5.2928932"></polygon>
-                            </defs>
-                            <use id="inf-load-more-upper-arrow" x="0" y="0" xlink:href="#a" fill="${color}" transform="scale(${scale})"/>
-                            <use id="inf-load-more-lower-arrow" x="0" y="5" xlink:href="#a" fill="${color}" transform="scale(${scale})"/>
-                        </svg>
-                        <style>
-                            @keyframes down1 {
-                                from {y: 0;}
-                                to {y: 1.1;}
-                            }
+    if (!html) {
+        html = `<div class="inf-load-more-indicator" style="display: flex; justify-content: center; align-items: center; padding: 50px;">
+                    <svg width="${13.415 * scale}" height="${14 * scale}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                        <defs>
+                            <polygon id="a" points="12,        0
+                                                    13.414214, 1.4142136 
+                                                    6.707107,  8.1213204 
+                                                    0,         1.4142136 
+                                                    1.414214,  0 
+                                                    6.707107,  5.2928932"></polygon>
+                        </defs>
+                        <use id="inf-load-more-upper-arrow" x="0" y="0" xlink:href="#a" fill="${color}" transform="scale(${scale})"/>
+                        <use id="inf-load-more-lower-arrow" x="0" y="5" xlink:href="#a" fill="${color}" transform="scale(${scale})"/>
+                    </svg>`;
+        html += animated ?
+            `<style>
+                    @keyframes down1 {
+                        from {y: 0;}
+                        to {y: 1.15;}
+                    }
 
-                            @keyframes down2 {
-                                from {y: 5;}
-                                to {y: 5.6;}
-                            }
-                            
-                            /* The element to apply the animation to */
-                            #inf-load-more-upper-arrow {
-                                animation: down1 1.5s ease-in-out .5s infinite alternate;
-                            }
-                            #inf-load-more-lower-arrow {
-                                animation: down2 1.5s ease-in-out .5s infinite alternate;
-                            }
+                    @keyframes down2 {
+                        from {y: 5;}
+                        to {y: 5.6;}
+                    }
 
-                            .inf-load-more-indicator {
-                                transition: transform 0.5s;
-                            }
+                    @keyframes fadeIn {
+                        from { opacity: 0; transform: translateY(-${scale * 3}px); }
+                        to { opacity: 1; transform: translateY(0); } 
+                    }
 
-                            .inf-load-more-indicator:hover {
-                                transform: translateY(${scale * 5}px);
-                            }
-                        </style>
-                    </div>`;
+                    @keyframes fadeOut {
+                        to { opacity: 0; transform: translateY(${scale * 10}px); visibility: hidden; } 
+                    }
+                    
+                    /* The element to apply the animation to */
+                    #inf-load-more-upper-arrow {
+                        animation: down1 1.5s ease-in-out .5s infinite alternate;
+                    }
+                    #inf-load-more-lower-arrow {
+                        animation: down2 1.5s ease-in-out .5s infinite alternate;
+                    }
+
+                    .inf-load-more-indicator {
+                        animation: fadeIn .5s ease-in 0s;
+                        animation-fill-mode: forwards;
+                    }
+                </style>` : '';
+        html += `</div>`;
+    }
     let parser = new DOMParser();
     let doc = parser.parseFromString(html, 'text/html');
     doc.body.firstChild.addEventListener('mouseover', (e) => {
-        // e.currentTarget.style.display = 'none';
-        setTimeout(onHover, 350);
+        if (animated) e.currentTarget.style.animation = 'fadeOut .5s ease-out 0s';
+
+        setTimeout((el, onHover, animated) => {
+            if (animated) el.style.animation = 'fadeIn .5s ease 0s';
+            onHover();
+        }, 350, e.currentTarget, onHover, animated);
     })
     container.append(doc.body.firstChild);
 }

@@ -40,9 +40,10 @@ The configuration in the table is set under loadMoreIndicator object, or need to
 | active              | `boolean`  |   `false`   | If set to true, a load-more indicator will show up under each segment.   |
 | container           | `string`   |   parent element of infinite-scroll container  | The selector string of the container. |
 | color               | `string`   |`'lightgray'`| The name or hash of the indicator color. |
-| scale               | `int`      |   `5` | The scale of the indicator icon |
+| scale               | `int`      |   `5`       | The scale of the indicator icon |
+| animated            | `boolean`  |   `true`    | Weather to animate the load-more indicator (fadeIn, fadeOut, floating-animation). |
 | onHover             | `function` |   `() => this.fetch()`   |  function that fire on 'mouseover' over load-more-indicator |
-| html                | `string`   |   `''` | The HTML of a custom loading indicator (the class of the outer `<div>` need to be `inf-load-more-indicator`). If this is left empty, the default load-more icon will be used. |
+| html                | `string`   |   `''`      | The HTML of a custom loading indicator (the class of the outer `<div>` need to be `inf-load-more-indicator`). If this is left empty, the default load-more icon will be used. |
 
 ## API v4
 ### InfiniteScroll
