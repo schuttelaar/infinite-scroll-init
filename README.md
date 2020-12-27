@@ -69,12 +69,13 @@ The essential configuration that need to be passed to the constructor in order t
 ### Optiona
 | Config              | Type       | Default     | Description                                                       |
 | ------------------- | :--------: |  :--------: | ----------------------------------------------------------------- |
-| segment             | `int`      |   `1`         | The number of the segment to start with. This option is used when you restore infinite scroll state after page reloading, so you pass the number of the restored segment on the initialization. |
+| segment             | `number`      |   `1`         | The number of the segment to start with. This option is used when you restore infinite scroll state after page reloading, so you pass the number of the restored segment on the initialization. |
 | segmentParam        | `string`   | `'segment'`   | The name of the segment parameter other than `segment`, like `page`. |
 | lockInfiniteScroll  | `boolean`  |   `false`     | Lock infinite scroll, so scrolling down won't trigger the fetch function. |
 | autoFill            | `boolean`  |   `true`      | Keep fetching data until the page is filled (ie. scrollbar appear) |
 | fetchOnInitiate     | `boolean`  |   `false`     | Trigger a fetch call directly on initiate with `initial=1` param send in the initial request, so the API endpoint differentiate the initial fetch from normal segment fetch. |
-| dataType        | `string`   |   `json`      | The type of retrieved data from fetch request. |
+| offset              |  `number`  |`1/2*clientHeight`| A number in pixels such that fetch is triggered on reaching this offset before the end of the content list. In other words, greater number mean fetching more content ahead. |
+| dataType      |`'html'`\|`'json'`|   `json`      | The type of retrieved data from fetch request. |
 | getDataParams       | `function` |   window's query-string | Function return the data (query string or js object) to be used in the fetch request. The default is the current window's query-string: </br> `() => window.location.search.substr(1)`|
 | onError             | `function` |   `() => {}`  | Callback function when the fetch request failed.  |
 | updateParam         | `function` |   modify window's query-string  | Callback function to update the segment param state externally (ie. on local query-string or session storage). The 1st arg should be the parameter key, and the 2nd arg is the value, `updateParam(segmentParam, segment)`.|
@@ -89,7 +90,7 @@ The configuration in the table is set under loadingIndicator object, or need to 
 | container           | `string`   |   parent element of infinite-scroll container  | The selector string of the container. |
 | color               | `string`   |`'lightgray'`| The name or hash of the indicator color. |
 | size                | `string`   |   `'0.7em'` | The size of the loading indicator. |
-| type                | `int`      |   1         | <li> 0 => custom indicator, check `html` option bellow </li> <li> 1 => circle spinning dots</li> <li>2 => horizontal animated dots</li> |
+| type                | `number`   |   1         | <li> 0 => custom indicator, check `html` option bellow </li> <li> 1 => circle spinning dots</li> <li>2 => horizontal animated dots</li> |
 | html                | `string`   |   `''` | The HTML of a custom loading indicator (the class of the outer `<div>` need to be `inf-loading-indicator`). To use this custom indicator the type should be set to 0 |
 
 ### Load-more indicator
@@ -99,7 +100,7 @@ The configuration in the table is set under loadMoreIndicator object, or need to
 | active              | `boolean`  |   `false`   | If set to true, a load-more indicator will show up under each segment.   |
 | container           | `string`   |   parent element of infinite-scroll container  | The selector string of the container. |
 | color               | `string`   |`'lightgray'`| The name or hash of the indicator color. |
-| scale               | `int`      |   `5`       | The scale of the indicator icon |
+| scale               | `number`   |   `5`       | The scale of the indicator icon |
 | animated            | `boolean`  |   `true`    | Weather to animate the load-more indicator (fadeIn, fadeOut, floating-animation). |
 | onHover             | `function` |   `() => this.fetch()`   |  function that fire on 'mouseover' over load-more-indicator |
 | html                | `string`   |   `''`      | The HTML of a custom loading indicator (the class of the outer `<div>` need to be `inf-load-more-indicator`). If this is left empty, the default load-more icon will be used. |
@@ -213,6 +214,7 @@ $('inf-loading-indicator').css("display", "none");
  - Remove jQuery, drop out IE support
  - Fetch and cache next segment ahead, so the current segment is always available in session storage to be rendered on scroll event
  - No need for using NoMoreContent in response header, as the new mechanism always include look ahead for next segment, hence check if there is indeed more content.
+ - Add offset to config, so content will be fetched and rendered ahead by this offset
  - Add loadMoreIndicator to show off that there is more content to be fetched and this will explicitly trigger `fetch()` for next segment on hover/mouseover, in case scroll event can't happen because fetched content didn't fill the page or any other reason. Check constructor configuration section.
  - `initLoadMoreIndicator` as exposed function for separate use
 

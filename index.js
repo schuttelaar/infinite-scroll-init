@@ -1,39 +1,42 @@
 /**
- * @version 3.2
+ * @version 4.0
  * @author Mahmoud Al-Refaai <Schuttelaar & Partners>
  */
 
 export default class InfiniteScroll {
 
     /**
-     * Constructor of InfiniteScroll object
-     * @param {int} config.segment              the number of segment to start on
-     * @param {String} config.segmentPara       override the default param name 'segment'
-     * @param {String} config.container         string selector of the container (eg: "#containerId" or ".containerClass")
-     * @param {Bool} config.lockInfiniteScroll  if set to true, scrolling down won't trigger the fetch function
-     * @param {Bool} config.autoFill            boolean weather to keep fetching data until the page is filled (ie. scrollbar appear)
-     * @param {Bool} config.fetchOnInitiate     boolean to fetch all data till the specified segment on infinite scroll initiate      
-     * @param {String} config.dataRoute         the url-route to fetch the data from
-     * @param {String} config.dataType          the data-type of the response, ['html' | (default) 'json']
-     * @param {function} config.getDataParams   function return the data (query string or object) used in AJAX request
-     * @param {function} config.onSuccess       callback function when AJAX request succeed
-     * @param {function} config.onError         callback function when AJAX request failed
-     * @param {function} config.updateParam     callback function to update the segment param in query string
+     * Constructor of the InfiniteScroll object
+     * @param {Object} config                               the configuration of this InfiniteScroll instance
+     * @param {1} [config.segment]                          the segment number
+     * @param {"segment"} [config.segmentParam]             override the default param name 'segment'
+     * @param {string} config.container                     string selector of the content container (eg: "#containerId" or ".containerClass")
+     * @param {false} [config.lockInfiniteScroll]           boolean weather to prevent scroll-event from trigger the fetch function
+     * @param {true} [config.autoFill]                      boolean weather to keep fetching data on first load until the page is filled (ie. scrollbar appear) 
+     * @param {false} [config.fetchOnInitiate]              boolean weather to fetch all data till the specified segment on infinite scroll initiate      
+     * @param {number} [config.offset]                      number in pixels such that fetch is triggered on reaching this offset before the end of the content list
+     * @param {string} config.dataRoute                     the url-route to fetch the data from
+     * @param {'html'|'json'} [config.dataType]             the data-type of the response, ['html' | (default) 'json']
+     * @param {()=>string|JSON} [config.getDataParams]      function return the data (query string or object) to be used in fetch request
+     * @param {(res: string|JSON)=>void} config.onSuccess   callback function when fetch request succeed
+     * @param {(err: Error)=>void} [config.onError]         callback function when fetch request failed
+     * @param {(key: string, value: string)=>void} [config.updateParam]     callback function to update the segment param in query string
      * 
-     * @param {Bool} config.loadingIndicator.active         boolean whether to use loading indicator while fetching, default = false
-     * @param {String} config.loadingIndicator.container    string for query selector of container, default is the parent of config.container passed above
-     * @param {String} config.loadingIndicator.color        string indicate the color hash or color name
-     * @param {String} config.loadingIndicator.size         string with number + unit (eg. '20px', '0.7em')
-     * @param {int} config.loadingIndicator.type            type of indicator [0 => custom, 1 => circle spinning dots, 2 => horizontal dots], default set to 1
-     * @param {String} config.loadingIndicator.html         string with HTML of custom loading indicator (Note: class of outer div need to be 'inf-loading-indicator'), 
+     * @param {boolean} config.loadingIndicator.active      boolean whether to use loading indicator while fetching, default = false
+     * @param {string} config.loadingIndicator.container    string for query selector of container, default is the parent of config.container passed above
+     * @param {string} config.loadingIndicator.color        string indicate the color hash or color name
+     * @param {string} config.loadingIndicator.size         string with number + unit (eg. '20px', '0.7em')
+     * @param {number} config.loadingIndicator.type         type of indicator [0 => custom, 1 => circle spinning dots, 2 => horizontal dots], default set to 1
+     * @param {string} config.loadingIndicator.html         string with HTML of custom loading indicator (Note: class of outer div need to be 'inf-loading-indicator'), 
      *                                                      to use this custom indicator the type should be set to 0.
-     * @param {Bool} config.loadMoreIndicator.active        boolean whether to use load more indicator when there is more content to fetch, default = false
-     * @param {String} config.loadMoreIndicator.container   string for query selector of container, default is the parent of config.container passed above
-     * @param {String} config.loadMoreIndicator.color       string indicate the color hash or color name
-     * @param {String} config.loadMoreIndicator.scale       integer to specify the scale of the indicator icon, default = 5
-     * @param {Bool} config.loadMoreIndicator.animated      boolean weather to animate load-more indicator, default = true
+     * 
+     * @param {boolean} config.loadMoreIndicator.active     boolean whether to use load more indicator when there is more content to fetch, default = false
+     * @param {string} config.loadMoreIndicator.container   string for query selector of container, default is the parent of config.container passed above
+     * @param {string} config.loadMoreIndicator.color       string indicate the color hash or color name
+     * @param {string} config.loadMoreIndicator.scale       integer to specify the scale of the indicator icon, default = 5
+     * @param {boolean} config.loadMoreIndicator.animated   boolean weather to animate load-more indicator, default = true
      * @param {function} config.loadMoreIndicator.onHover   function that fire on 'mouseover' over load-more-indicator, default = this.autoFill()
-     * @param {String} config.loadMoreIndicator.html        string with HTML of custom load-more indicator (Note: class of outer div need to be 'inf-load-more-indicator'), 
+     * @param {string} config.loadMoreIndicator.html        string with HTML of custom load-more indicator (Note: class of outer div need to be 'inf-load-more-indicator'), 
      *                                                      if this not used, the default load-more icon will be used.
      */
     constructor(config) {
@@ -45,6 +48,7 @@ export default class InfiniteScroll {
             autoFill: true,
             autoScroll: false,
             fetchOnInitiate: false,
+            offset: 1 / 2 * document.documentElement.clientHeight,
             dataRoute: '',
             dataType: 'json',
             getDataParams: () => window.location.search.substr(1),
@@ -80,7 +84,7 @@ export default class InfiniteScroll {
         //store onScroll function in a local variable so it can be used later on removed
         this.onScroll = function() {
             const { scrollHeight, scrollTop, clientHeight } = document.documentElement;
-            if (!this.config.lockInfiniteScroll && (scrollTop + clientHeight > scrollHeight - 5))
+            if (!this.config.lockInfiniteScroll && (scrollTop + clientHeight > scrollHeight - this.config.offset))
                 this.fetch();
         }
         this.scrollHandler = this.onScroll.bind(this);
@@ -152,7 +156,7 @@ export default class InfiniteScroll {
      * Repeat fetching data until the page is filled (ie. scrollbar is shown).
      */
     autoFill() {
-        if (document.body.clientHeight <= document.documentElement.clientHeight) {
+        if (document.body.clientHeight <= document.documentElement.clientHeight + this.config.offset) {
             this.fetch()
                 .then((moreContent) => {
                     //in case there is still more content to fetch, check again if the page is not filled.
@@ -463,13 +467,15 @@ export function initLoadingIndicator(config) {
 }
 
 /**
- * Initiate loading indicator through injecting the required HTML with 
- * the corresponding CSS as a <style> tag to the specified container.
- * @param {Bool} config.active         boolean whether to use loading indicator while fetching, default = false
- * @param {String} config.container    string for query selector of container, default is the parent of config.container passed above
- * @param {String} config.color        string indicate the color hash or color name
- * @param {String} config.scale         string with number + unit (eg. '20px', '0.7em')
- * @param {String} config.html         string with HTML of custom loading indicator (class of outer div need to be 'inf-loading-indicator'),                                                       to use this custom indicator the type should be set to 0.
+ * Initiate load-more indicator through injecting the required HTML with the corresponding CSS as a <style> tag to the specified container.
+ * @param {boolean} config.active     boolean whether to use load more indicator when there is more content to fetch, default = false
+ * @param {string} config.container   string for query selector of container, default is the parent of config.container passed above
+ * @param {string} config.color       string indicate the color hash or color name
+ * @param {string} config.scale       integer to specify the scale of the indicator icon, default = 5
+ * @param {boolean} config.animated   boolean weather to animate load-more indicator, default = true
+ * @param {function} config.onHover   function that fire on 'mouseover' over load-more-indicator, default = this.autoFill()
+ * @param {string} config.html        string with HTML of custom load-more indicator (Note: class of outer div need to be 'inf-load-more-indicator'), 
+ *                                    if this not used, the default load-more icon will be used.                                                    to use this custom indicator the type should be set to 0.
  */
 export function initLoadMoreIndicator(config) {
     let { container, color = 'lightgray', scale = 5, html, animated = true, onHover = () => {} } = config;
