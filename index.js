@@ -408,7 +408,7 @@ export function initLoadingIndicator(config) {
             break;
         default:
             html = `<div style="display: flex; justify-content: center; align-items: center">
-                        <div class="inf-loading-indicator"></div>
+                        <div class="inf-loading-indicator" style="display: none;"></div>
                         <style>
                             .inf-loading-indicator {
                                 color: ${color};
