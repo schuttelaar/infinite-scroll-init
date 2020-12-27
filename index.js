@@ -8,7 +8,7 @@ export default class InfiniteScroll {
     /**
      * Constructor of the InfiniteScroll object
      * @param {Object} config                               the configuration of this InfiniteScroll instance
-     * @param {1} [config.segment]                          the segment number
+     * @param {number} [config.segment]                     the segment number on initiate. Default is the value of segment param in window query-string or `1` if this param doesn't exist.
      * @param {"segment"} [config.segmentParam]             override the default param name 'segment'
      * @param {string} config.container                     string selector of the content container (eg: "#containerId" or ".containerClass")
      * @param {false} [config.lockInfiniteScroll]           boolean weather to prevent scroll-event from trigger the fetch function
@@ -41,7 +41,7 @@ export default class InfiniteScroll {
      */
     constructor(config) {
         this.config = {
-            segment: 1,
+            segment: null,
             segmentParam: 'segment',
             container: '',
             lockInfiniteScroll: false,
@@ -59,7 +59,6 @@ export default class InfiniteScroll {
                 dataParams.set(key, value);
                 history.pushState({}, document.title, window.location.href.split('?')[0] + '?' + decodeURI(dataParams.toString()) + window.location.hash);
             },
-
             loadingIndicator: {
                 active: false,
                 container: document.querySelector(config.container).parentNode,
@@ -80,6 +79,13 @@ export default class InfiniteScroll {
         };
 
         this.editConfig(config);
+
+        if (this.config.segment === null) {
+            // Get segment parameter from query string
+            const urlParams = new URLSearchParams(window.location.search);
+            const segmentParam = urlParams.get(this.config.segmentParam);
+            this.config.segment = segmentParam && !isNaN(segmentParam) ? parseInt(segmentParam) : 1;
+        }
 
         //store onScroll function in a local variable so it can be used later on removed
         this.onScroll = function() {

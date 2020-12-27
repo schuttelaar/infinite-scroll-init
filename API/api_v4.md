@@ -7,10 +7,10 @@ The essential configuration that need to be passed to the constructor in order t
 | dataRoute     | `string`  | The url-route to be used in the fetch request.                                                              |
 | onSuccess     | `function`| Callback function to handle the response result when the fetch is succeed. The 1st arg is the retrieved result.   |
 
-### Optiona
-| Config              | Type       | Default     | Description                                                       |
-| ------------------- | :--------: |  :--------: | ----------------------------------------------------------------- |
-| segment             | `number`      |   `1`         | The number of the segment to start with. This option is used when you restore infinite scroll state after page reloading, so you pass the number of the restored segment on the initialization. |
+### Optional
+| Config              | Type       | Default       | Description                                                       |
+| ------------------- | :--------: |  :----------: | ----------------------------------------------------------------- |
+| segment             | `number`   |       -       | The segment number on initiate. Default is the value of segment param in window query-string or `1` if this param doesn't exist. |
 | segmentParam        | `string`   | `'segment'`   | The name of the segment parameter other than `segment`, like `page`. |
 | lockInfiniteScroll  | `boolean`  |   `false`     | Lock infinite scroll, so scrolling down won't trigger the fetch function. |
 | autoFill            | `boolean`  |   `true`      | Keep fetching data until the page is filled (ie. scrollbar appear) |
@@ -22,6 +22,7 @@ The essential configuration that need to be passed to the constructor in order t
 | updateParam         | `function` |   modify window's query-string  | Callback function to update the segment param state externally (ie. on local query-string or session storage). The 1st arg should be the parameter key, and the 2nd arg is the value, `updateParam(segmentParam, segment)`.|
 | loadingIndicator    | `object`   |   inactive    | Please check the configuration of the loading indicator bellow.. |
 | loadMoreIndicator   | `object`   |   inactive    | Please check the configuration of the load-more indicator bellow.. |
+
 
 ### Loading indicator
 The configuration in the table is set under loadingIndicator object, or need to pass as config object to `initLoadingIndicator` function for separate use.

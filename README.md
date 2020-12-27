@@ -17,29 +17,17 @@ npm i --save infinite-scroll-init
 ```
 
 Then.. 
-Typical use case with [`query-string-modifier`](https://github.com/schuttelaar/query-string-modifier) package..
 
 ```js
 import InfiniteScroll from 'infinite-scroll-init';
-import QueryString from 'query-string-modifier';
-
-// Initialize QueryString obj with default behavior
-const qs = new QueryString(); 
-
-// Get segment parameter from query string
-let segmentParam = qs.get('segment');
-let segment = segmentParam && !isNaN(segmentParam)? parseInt(segmentParam) : 1;
 
 // Initialize InfiniteScroll obj
 const infiniteScroll = new InfiniteScroll({
-    segment: segment,
     container: '#cards.container',
     autoScroll: true,
-    ajaxRoute: '/cards/data',
+    dataRoute: '/cards/data',
     ajaxDataType: 'html',
-    getAjaxData: qs.getAllParams,
     onSuccess: appendCards,
-    updateParam: qs.updateParam,
     loadingIndicator: {
         active: true,
         color: '#3B9E98',
@@ -66,10 +54,10 @@ The essential configuration that need to be passed to the constructor in order t
 | dataRoute     | `string`  | The url-route to be used in the fetch request.                                                              |
 | onSuccess     | `function`| Callback function to handle the response result when the fetch is succeed. The 1st arg is the retrieved result.   |
 
-### Optiona
-| Config              | Type       | Default     | Description                                                       |
-| ------------------- | :--------: |  :--------: | ----------------------------------------------------------------- |
-| segment             | `number`      |   `1`         | The number of the segment to start with. This option is used when you restore infinite scroll state after page reloading, so you pass the number of the restored segment on the initialization. |
+### Optional
+| Config              | Type       | Default       | Description                                                       |
+| ------------------- | :--------: |  :----------: | ----------------------------------------------------------------- |
+| segment             | `number`   |       -       | The segment number on initiate. Default is the value of segment param in window query-string or `1` if this param doesn't exist. |
 | segmentParam        | `string`   | `'segment'`   | The name of the segment parameter other than `segment`, like `page`. |
 | lockInfiniteScroll  | `boolean`  |   `false`     | Lock infinite scroll, so scrolling down won't trigger the fetch function. |
 | autoFill            | `boolean`  |   `true`      | Keep fetching data until the page is filled (ie. scrollbar appear) |
@@ -210,6 +198,9 @@ $('inf-loading-indicator').css("display", "none");
 ```
 
 ## Changes history
+
+#### v4.1
+ - Default value of `config.segment` is retrieved automatically from window's query-string using `config.segmentParam` as key.
 #### v4.0
  - Remove jQuery, drop out IE support
  - Fetch and cache next segment ahead, so the current segment is always available in session storage to be rendered on scroll event
