@@ -41,7 +41,7 @@ export default class InfiniteScroll {
      */
     constructor(config) {
         this.config = {
-            segment: null,
+            segment: undefined, //this will be override below
             segmentParam: 'segment',
             container: '',
             lockInfiniteScroll: false,
@@ -80,7 +80,9 @@ export default class InfiniteScroll {
 
         this.editConfig(config);
 
-        if (this.config.segment === null) {
+        //in case this hasn't been override by config argument
+        if (this.config.segment === undefined) {
+
             // Get segment parameter from query string
             const urlParams = new URLSearchParams(window.location.search);
             const segmentParam = urlParams.get(this.config.segmentParam);
