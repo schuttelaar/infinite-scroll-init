@@ -97,7 +97,8 @@ export default class InfiniteScroll {
             initLoadMoreIndicator(this.config.loadMoreIndicator);
         this.$loadMoreIndicator = document.querySelector('.inf-load-more-indicator');
 
-        // fetch initial data;
+        // fetch initial data; 
+        // Since fetchOnInitiate is true, the first segment will be cached before rendering in fetch function!
         if (this.config.fetchOnInitiate) {
             this.fetch().then((moreContent) => {
 
@@ -112,7 +113,10 @@ export default class InfiniteScroll {
             if (this.config.autoScroll && this.config.segment > 1)
                 this.scrollDown();
 
-            this.config.autoFill && this.autoFill();
+            //cache first segment, then proceed to autoFill
+            this.cacheNextSegment().then(() => {
+                this.config.autoFill && this.autoFill();
+            });
         }
 
         // Bind all class' functions to "this"
@@ -181,8 +185,10 @@ export default class InfiniteScroll {
         if (this.config.loadingIndicator.active)
             this.$loadingIndicator.style.display = 'inherit';
 
-        //Add initial param if this an initial fetch (on page load)
+
         if (this.config.fetchOnInitiate) {
+
+            //cache first segment before rendering
             res = await this.cacheNextSegment();
             if (!res.length) return;
         }
