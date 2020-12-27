@@ -193,8 +193,8 @@ export default class InfiniteScroll {
         if (this.config.fetchOnInitiate) {
 
             //cache first segment before rendering
-            res = await this.cacheNextSegment();
-            if (!res.length) return;
+            let resFirst = await this.cacheNextSegment();
+            if (!resFirst.length) return;
         }
 
         //increase and update segment state
