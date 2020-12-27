@@ -470,7 +470,7 @@ export function initLoadMoreIndicator(config) {
         container = document.querySelector(container);
 
     html = html || `<div class="inf-load-more-indicator" style="display: flex; justify-content: center; align-items: center; padding: 50px">
-                        <svg width="${13.415 * scale}" height="${13.122 * scale}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                        <svg width="${13.415 * scale}" height="${14 * scale}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
                             <defs>
                                 <polygon id="a" points="12,        0
                                                         13.414214, 1.4142136 
@@ -479,15 +479,42 @@ export function initLoadMoreIndicator(config) {
                                                         1.414214,  0 
                                                         6.707107,  5.2928932"></polygon>
                             </defs>
-                            <use x="0" y="0" xlink:href="#a" fill="${color}" transform="scale(${scale})"/>
-                            <use x="0" y="5" xlink:href="#a" fill="${color}" transform="scale(${scale})"/>
+                            <use id="inf-load-more-upper-arrow" x="0" y="0" xlink:href="#a" fill="${color}" transform="scale(${scale})"/>
+                            <use id="inf-load-more-lower-arrow" x="0" y="5" xlink:href="#a" fill="${color}" transform="scale(${scale})"/>
                         </svg>
+                        <style>
+                            @keyframes down1 {
+                                from {y: 0;}
+                                to {y: 1.1;}
+                            }
+
+                            @keyframes down2 {
+                                from {y: 5;}
+                                to {y: 5.6;}
+                            }
+                            
+                            /* The element to apply the animation to */
+                            #inf-load-more-upper-arrow {
+                                animation: down1 1.5s ease-in-out .5s infinite alternate;
+                            }
+                            #inf-load-more-lower-arrow {
+                                animation: down2 1.5s ease-in-out .5s infinite alternate;
+                            }
+
+                            .inf-load-more-indicator {
+                                transition: transform 0.5s;
+                            }
+
+                            .inf-load-more-indicator:hover {
+                                transform: translateY(${scale * 5}px);
+                            }
+                        </style>
                     </div>`;
     let parser = new DOMParser();
     let doc = parser.parseFromString(html, 'text/html');
     doc.body.firstChild.addEventListener('mouseover', (e) => {
-        e.currentTarget.style.display = 'none';
-        onHover();
+        // e.currentTarget.style.display = 'none';
+        setTimeout(onHover, 350);
     })
     container.append(doc.body.firstChild);
 }
