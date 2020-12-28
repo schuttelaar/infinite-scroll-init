@@ -26,7 +26,7 @@ const infiniteScroll = new InfiniteScroll({
     container: '#cards.container',
     autoScroll: true,
     dataRoute: '/cards/data',
-    ajaxDataType: 'html',
+    dataType: 'html',
     onSuccess: appendCards,
     loadingIndicator: {
         active: true,
@@ -62,7 +62,7 @@ The essential configuration that need to be passed to the constructor in order t
 | lockInfiniteScroll  | `boolean`  |   `false`     | Lock infinite scroll, so scrolling down won't trigger the fetch function. |
 | autoFill            | `boolean`  |   `true`      | Keep fetching data until the page is filled (ie. scrollbar appear) |
 | fetchOnInitiate     | `boolean`  |   `false`     | Trigger a fetch call directly on initiate with `initial=1` param send in the initial request, so the API endpoint differentiate the initial fetch from normal segment fetch. |
-| offset              |  `number`  |`1/2*clientHeight`| A number in pixels such that fetch is triggered on reaching this offset before the end of the content list. In other words, greater number mean fetching more content ahead. |
+| offset              |  `number`  |`1/2*clientHeight`| A number in pixels such that `fetch()` is triggered on reaching this offset before the end of the content list. In other words, greater number mean fetching more content ahead. |
 | dataType      |`'html'`\|`'json'`|   `json`      | The type of retrieved data from fetch request. |
 | getDataParams       | `function` |   window's query-string | Function return the data (query string or js object) to be used in the fetch request. The default is the current window's query-string: </br> `() => window.location.search.substr(1)`|
 | onError             | `function` |   `() => {}`  | Callback function when the fetch request failed.  |
@@ -200,14 +200,15 @@ $('inf-loading-indicator').css("display", "none");
 ## Changes history
 
 #### v4.1
- - Default value of `config.segment` is retrieved automatically from window's query-string using `config.segmentParam` as key.
+ - Default value of `config.segment` is retrieved automatically from window's query-string using `config.segmentParam` as key. So in ideal case where `segmentParam` is handled through window query-string, the default case of `config.segment` should be sufficient.
 #### v4.0
  - Remove jQuery, drop out IE support
- - Fetch and cache next segment ahead, so the current segment is always available in session storage to be rendered on scroll event
- - No need for using NoMoreContent in response header, as the new mechanism always include look ahead for next segment, hence check if there is indeed more content.
- - Add offset to config, so content will be fetched and rendered ahead by this offset
- - Add loadMoreIndicator to show off that there is more content to be fetched and this will explicitly trigger `fetch()` for next segment on hover/mouseover, in case scroll event can't happen because fetched content didn't fill the page or any other reason. Check constructor configuration section.
- - `initLoadMoreIndicator` as exposed function for separate use
+ - Fetch and cache the next segment ahead, such that it is always available in session storage to be rendered on scroll event, resulting in better user experience.
+ - No need for using `NoMoreContent` header in the response, as the new mechanism always perform fetch-ahead in order to cache upcoming segment content, hence using this data to check if there is indeed more content.
+ - Add `offset` option to config, such that the content is rendered ahead by this offset, instead of waiting to reach the end of the content list to trigger `fetch()`.
+ - Add loadMoreIndicator to show that there is more content to be fetched. In case where scroll event can't happen because the fetched content didn't fill the page or any other reason, this indicator will explicitly trigger `fetch()` for next segment on hover/mouseover.
+ - `initLoadMoreIndicator` as exposed function for separate use.
+ - Make build-in `updateParam()` and `getDataParams()` functions to use as default. These will work on window's query-string to update segment param and retrieve the data params for `fetch()`. Nevertheless, these two function can be override as usual through constructor config.
 
 #### v3.2
  - `initLoadingIndicator()` function accepts selector string as container in constructor configuration.
