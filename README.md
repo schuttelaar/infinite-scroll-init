@@ -39,7 +39,7 @@ const infiniteScroll = new InfiniteScroll({
 });
 
 /**
- * Handle the result retrieved from Ajax request corresponds to each segment
+ * Handle the result retrieved from fetch request corresponds to each segment
  */ 
 function appendCards(res) { 
     ...
@@ -76,7 +76,7 @@ The configuration in the table is set under loadingIndicator object, or need to 
 | ------------------- | :--------: |  :--------: | ------------------------------------------------------------------------ |
 | active              | `boolean`  |   `false`   | If set to true, a loading indicator will show up during fetch request.   |
 | container           | `string`   |   parent element of infinite-scroll container  | The selector string of the container. |
-| color               | `string`   |`'lightgray'`| The name or hash of the indicator color. |
+| color               | `string`   |`'lightgray'`| Color name or hash. |
 | size                | `string`   |   `'0.7em'` | The size of the loading indicator. |
 | type                | `number`   |   1         | <li> 0 => custom indicator, check `html` option bellow </li> <li> 1 => circle spinning dots</li> <li>2 => horizontal animated dots</li> |
 | html                | `string`   |   `''` | The HTML of a custom loading indicator (the class of the outer `<div>` need to be `inf-loading-indicator`). To use this custom indicator the type should be set to 0 |
@@ -85,12 +85,12 @@ The configuration in the table is set under loadingIndicator object, or need to 
 The configuration in the table is set under loadMoreIndicator object, or need to pass as config object to `initLoadMoreIndicator` function for separate use. The purpose of this indicator is when a filter is applied with container get emptied, the fetched content might not fill the page (ie. no scroll event can happen), so this will be indicator that more content can be fetched and `onHover` function will explicitly trigger `fetch` to render the next segment without the need for a scroll event.
 | Config              | Type       | Default     | Description                                                              |
 | ------------------- | :--------: |  :--------: | ------------------------------------------------------------------------ |
-| active              | `boolean`  |   `false`   | If set to true, a load-more indicator will show up under each segment.   |
+| active              | `boolean`  |   `false`   | If set to true, a load-more indicator will show up under last segment.   |
 | container           | `string`   |   parent element of infinite-scroll container  | The selector string of the container. |
-| color               | `string`   |`'lightgray'`| The name or hash of the indicator color. |
+| color               | `string`   |`'lightgray'`| Color name or hash. |
 | scale               | `number`   |   `5`       | The scale of the indicator icon |
 | animated            | `boolean`  |   `true`    | Weather to animate the load-more indicator (fadeIn, fadeOut, floating-animation). |
-| onHover             | `function` |   `() => this.fetch()`   |  function that fire on 'mouseover' over load-more-indicator |
+| onHover             | `function` |   `() => this.fetch()`   |  function that fire on mouseover load-more indicator |
 | html                | `string`   |   `''`      | The HTML of a custom loading indicator (the class of the outer `<div>` need to be `inf-load-more-indicator`). If this is left empty, the default load-more icon will be used. |
 
 ## API v4
@@ -198,6 +198,12 @@ $('inf-loading-indicator').css("display", "none");
 ```
 
 ## Changes history
+
+#### TO DO
+ - Cache content in session storage, so after page reload data would still be available. This might pose an issue with synicing the data in case this page refresh is not accidentally to get the refreshed content list. To tackle it, an refresh indicator can be used to explisitly get the data from the API, not from cache.
+ - When caching is done, a `document.documentElement.scrollTop` can be used to auto scroll to the exact point the page was before refresh.
+ - `Jump to the top` indicator/button can be added in the corener as an option.
+ - Config option to skip adding scroll listener, and relay on load-more indicator hover callback to fetch/render the next segment.
 
 #### v4.1
  - Default value of `config.segment` is retrieved automatically from window's query-string using `config.segmentParam` as key. So in ideal case where `segmentParam` is handled through window query-string, the default case of `config.segment` should be sufficient.
