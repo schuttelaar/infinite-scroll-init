@@ -15,6 +15,7 @@ The essential configuration that need to be passed to the constructor in order t
 | lockInfiniteScroll  | `boolean`  |   `false`     | Lock infinite scroll, so scrolling down won't trigger the fetch function. |
 | autoFill            | `boolean`  |   `true`      | Keep fetching data until the page is filled (ie. scrollbar appear) |
 | fetchOnInitiate     | `boolean`  |   `false`     | Trigger a fetch call directly on initiate with `initial=1` param send in the initial request, so the API endpoint differentiate the initial fetch from normal segment fetch. |
+| scrollLsn           | `boolean`  |   `true`      | Weather to append a scroll listener at the initiate. If `false`, the `onHover` callback of load-more indicator will be use to perform fetch/render of new segments. `addScrollLsn()`/`removeScrollLsn()` can be used to attach/remove listener at later point. |
 | offset              |  `number`  |`1/2*clientHeight`| A number in pixels such that fetch is triggered on reaching this offset before the end of the content list. In other words, greater number mean fetching more content ahead. |
 | dataType      |`'html'`\|`'json'`|   `json`      | The type of retrieved data from fetch request. |
 | getDataParams       | `function` |   window's query-string | Function return the data (query string or js object) to be used in the fetch request. The default is the current window's query-string: </br> `() => window.location.search.substr(1)`|

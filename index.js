@@ -48,7 +48,8 @@ export default class InfiniteScroll {
             autoFill: true,
             autoScroll: false,
             fetchOnInitiate: false,
-            offset: 1 / 2 * document.documentElement.clientHeight,
+            scrollLsn: true,
+            offset: document.documentElement.clientHeight / 2,
             dataRoute: '',
             dataType: 'json',
             getDataParams: () => window.location.search.substr(1),
@@ -98,7 +99,7 @@ export default class InfiniteScroll {
         this.scrollHandler = this.onScroll.bind(this);
         this.abortController = new AbortController();
 
-        this.addScrollLsn();
+        this.config.scrollLsn && this.addScrollLsn();
         this.$container = document.querySelector(this.config.container);
 
         this.config.loadingIndicator.active &&

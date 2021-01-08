@@ -62,6 +62,7 @@ The essential configuration that need to be passed to the constructor in order t
 | lockInfiniteScroll  | `boolean`  |   `false`     | Lock infinite scroll, so scrolling down won't trigger the fetch function. |
 | autoFill            | `boolean`  |   `true`      | Keep fetching data until the page is filled (ie. scrollbar appear) |
 | fetchOnInitiate     | `boolean`  |   `false`     | Trigger a fetch call directly on initiate with `initial=1` param send in the initial request, so the API endpoint differentiate the initial fetch from normal segment fetch. |
+| scrollLsn           | `boolean`  |   `true`      | Weather to append a scroll listener at the initiate. If `false`, the `onHover` callback of load-more indicator will be use to perform fetch/render of new segments. `addScrollLsn()`/`removeScrollLsn()` can be used to attach/remove listener at later point. |
 | offset              |  `number`  |`1/2*clientHeight`| A number in pixels such that `fetch()` is triggered on reaching this offset before the end of the content list. In other words, greater number mean fetching more content ahead. |
 | dataType      |`'html'`\|`'json'`|   `json`      | The type of retrieved data from fetch request. |
 | getDataParams       | `function` |   window's query-string | Function return the data (query string or js object) to be used in the fetch request. The default is the current window's query-string: </br> `() => window.location.search.substr(1)`|
@@ -203,8 +204,9 @@ $('inf-loading-indicator').css("display", "none");
  - Cache content in session storage, so after page reload data would still be available. This might pose an issue with synicing the data in case this page refresh is not accidentally to get the refreshed content list. To tackle it, an refresh indicator can be used to explisitly get the data from the API, not from cache.
  - When caching is done, a `document.documentElement.scrollTop` can be used to auto scroll to the exact point the page was before refresh.
  - `Jump to the top` indicator/button can be added in the corener as an option.
- - Config option to skip adding scroll listener, and relay on load-more indicator hover callback to fetch/render the next segment.
 
+#### v4.2
+ - Add `scrollLsn` config option to skip adding scroll listener if set to `false`, and rely solely on hover-callback of load-more indicator to fetch/render the next segment.
 #### v4.1
  - Default value of `config.segment` is retrieved automatically from window's query-string using `config.segmentParam` as key. So in ideal case where `segmentParam` is handled through window query-string, the default case of `config.segment` should be sufficient.
 #### v4.0
