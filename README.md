@@ -65,6 +65,7 @@ The essential configuration that need to be passed to the constructor in order t
 | scrollLsn           | `boolean`  |   `true`      | Weather to append a scroll listener at the initiate. If `false`, the `onHover` callback of load-more indicator will be use to perform fetch/render of new segments. `addScrollLsn()`/`removeScrollLsn()` can be used to attach/remove listener at later point of script execution. |
 | offset              |  `number`  |`1/2*clientHeight`| The number of pixels such that `fetch()` is triggered on reaching this offset before the end of the content list. In other words, greater number means fetching more content ahead. |
 | dataType      |`'html'`\|`'json'`|   `json`      | The type of retrieved data from fetch request. |
+| lastWithScript      | `boolean`  |   `false`     | Weather the last segment has a `<script>` tag and not empty. This helps to recognize the last segment. |
 | getDataParams       | `function` |   window's query-string | Function return the data (query string or js object) to be used in the fetch request. The default is the current window's query-string: </br> `() => window.location.search.substr(1)`|
 | onError             | `function` |   `() => {}`  | Callback function when the fetch request failed.  |
 | updateParam         | `function` |   modify window's query-string  | Callback function to update the segment param state externally (ie. on local query-string or session storage). The 1st arg should be the parameter key, and the 2nd arg is the value, `updateParam(segmentParam, segment)`.|

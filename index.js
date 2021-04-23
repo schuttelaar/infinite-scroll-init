@@ -1,5 +1,5 @@
 /**
- * @version 4.0
+ * @version 4.3
  * @author Mahmoud Al-Refaai <Schuttelaar & Partners>
  */
 
@@ -8,15 +8,17 @@ export default class InfiniteScroll {
     /**
      * Constructor of the InfiniteScroll object
      * @param {Object} config                               the configuration of this InfiniteScroll instance
-     * @param {number} [config.segment]                     the segment number on initiate. Default is the value of segment param in window query-string or `1` if this param doesn't exist.
+     * @param {1} [config.segment]                          the segment number on initiate. Default is the value of segment param in window query-string or `1` if this param doesn't exist.
      * @param {"segment"} [config.segmentParam]             override the default param name 'segment'
      * @param {string} config.container                     string selector of the content container (eg: "#containerId" or ".containerClass")
      * @param {false} [config.lockInfiniteScroll]           boolean weather to prevent scroll-event from trigger the fetch function
      * @param {true} [config.autoFill]                      boolean weather to keep fetching data on first load until the page is filled (ie. scrollbar appear) 
+     * @param {false} [config.autoScroll]                   boolean weather to scroll down to last segment on page load, in case the segment > 1.
      * @param {false} [config.fetchOnInitiate]              boolean weather to fetch all data till the specified segment on infinite scroll initiate      
      * @param {number} [config.offset]                      number in pixels such that fetch is triggered on reaching this offset before the end of the content list
      * @param {string} config.dataRoute                     the url-route to fetch the data from
      * @param {'html'|'json'} [config.dataType]             the data-type of the response, ['html' | (default) 'json']
+     * @param {false} [config.lastWithScript]               boolean weather last segment has a script tag. This helps to recognizing the last segment, if config.dataType == 'html'.
      * @param {()=>string|JSON} [config.getDataParams]      function return the data (query string or object) to be used in fetch request
      * @param {(res: string|JSON)=>void} config.onSuccess   callback function when fetch request succeed
      * @param {(err: Error)=>void} [config.onError]         callback function when fetch request failed
@@ -49,6 +51,7 @@ export default class InfiniteScroll {
             autoScroll: false,
             fetchOnInitiate: false,
             scrollLsn: true,
+            lastWithScript: false,
             offset: document.documentElement.clientHeight / 2,
             dataRoute: '',
             dataType: 'json',
@@ -58,7 +61,8 @@ export default class InfiniteScroll {
             updateParam: (key, value) => {
                 const dataParams = new URLSearchParams(window.location.search);
                 dataParams.set(key, value);
-                history.pushState({}, document.title, window.location.href.split('?')[0] + '?' + decodeURI(dataParams.toString()) + window.location.hash);
+                history.pushState({}, document.title, window.location.href.split('?')[0] +
+                    '?' + decodeURI(dataParams.toString()) + window.location.hash);
             },
             loadingIndicator: {
                 active: false,
@@ -220,6 +224,15 @@ export default class InfiniteScroll {
         //look up and cache the next segment, return weather there is moreContent or not
         return this.cacheNextSegment()
             .then(res => {
+
+                //Extra validation, in case the last segment isn't empty, but has <script> tag
+                if (this.config.lastWithScript && this.config.dataType == "html") {
+                    let parser = new DOMParser();
+                    let doc = parser.parseFromString(res, 'text/html');
+                    //if res has only <script>, the parser sets this inside <head>, hence <body> is empty.
+                    if (!doc.body.firstChild) res = [];
+                }
+
                 if (res.length) {
                     this.config.lockInfiniteScroll = false;
 
