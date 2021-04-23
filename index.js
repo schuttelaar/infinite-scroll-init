@@ -268,7 +268,7 @@ export default class InfiniteScroll {
         return fetch(this.config.dataRoute + '?' + dataParams.toString(), {
                 method: 'GET',
                 headers: {
-                    'Content-Type': this.dataType == 'html' ? 'text/html' : 'application/json',
+                    'Content-Type': this.config.dataType == 'html' ? 'text/html' : 'application/json',
                 },
                 signal: this.abortController.signal
             })
