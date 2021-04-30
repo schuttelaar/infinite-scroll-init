@@ -21,7 +21,8 @@ export default class InfiniteScroll {
      * @param {()=>string|JSON} [config.getDataParams]      function return the data (query string or object) to be used in fetch request
      * @param {(res: string|JSON)=>void} config.onSuccess   callback function when fetch request succeed
      * @param {(err: Error)=>void} [config.onError]         callback function when fetch request failed
-     * @param {(key: string, value: string)=>void} [config.updateParam]     callback function to update the segment param in query string
+     * @param {(value: number)=>void} [config.updateContentCounter]      callback function to update the total number of items. The value is passed directly from `ContentCounter` header.
+     * @param {(key: string, value: string)=>void} [config.updateParam]  callback function to update the segment param in query string
      * 
      * @param {boolean} config.loadingIndicator.active      boolean whether to use loading indicator while fetching, default = false
      * @param {string} config.loadingIndicator.container    string for query selector of container, default is the parent of config.container passed above
@@ -56,6 +57,7 @@ export default class InfiniteScroll {
             getDataParams: () => window.location.search.substr(1),
             onSuccess: () => {},
             onError: () => {},
+            updateContentCounter: () => {},
             updateParam: (key, value) => {
                 const dataParams = new URLSearchParams(window.location.search);
                 dataParams.set(key, value);
@@ -293,6 +295,9 @@ export default class InfiniteScroll {
 
                 if (response.headers.get('NoContent'))
                     res = [];
+
+                if (response.headers.get('ContentCounter') !== null)
+                    this.config.updateContentCounter(response.headers.get('ContentCounter'))
 
                 return res;
             })
