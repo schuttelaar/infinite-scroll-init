@@ -293,10 +293,10 @@ export default class InfiniteScroll {
                 if (this.config.loadingIndicator.active)
                     this.$loadingIndicator.style.display = 'none';
 
-                if (response.headers.get('NoContent'))
+                if (response.headers.get('No-Content'))
                     res = [];
 
-                if (response.headers.get('ContentCounter') !== null)
+                if (response.headers.get('Content-Counter') !== null)
                     this.config.updateContentCounter(response.headers.get('ContentCounter'))
 
                 return res;
