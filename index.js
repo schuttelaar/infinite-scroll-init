@@ -297,7 +297,7 @@ export default class InfiniteScroll {
                     res = [];
 
                 if (response.headers.get('Content-Counter') !== null)
-                    this.config.updateContentCounter(response.headers.get('ContentCounter'))
+                    this.config.updateContentCounter(response.headers.get('Content-Counter'))
 
                 return res;
             })
