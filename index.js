@@ -1,5 +1,5 @@
 /**
- * @version 4.3
+ * @version 5.0
  * @author Mahmoud Al-Refaai <Schuttelaar & Partners>
  */
 
@@ -18,7 +18,6 @@ export default class InfiniteScroll {
      * @param {number} [config.offset]                      number in pixels such that fetch is triggered on reaching this offset before the end of the content list
      * @param {string} config.dataRoute                     the url-route to fetch the data from
      * @param {'html'|'json'} [config.dataType]             the data-type of the response, ['html' | (default) 'json']
-     * @param {false} [config.lastWithScript]               boolean weather last segment has a script tag. This helps to recognizing the last segment, if config.dataType == 'html'.
      * @param {()=>string|JSON} [config.getDataParams]      function return the data (query string or object) to be used in fetch request
      * @param {(res: string|JSON)=>void} config.onSuccess   callback function when fetch request succeed
      * @param {(err: Error)=>void} [config.onError]         callback function when fetch request failed
@@ -51,7 +50,6 @@ export default class InfiniteScroll {
             autoScroll: false,
             fetchOnInitiate: false,
             scrollLsn: true,
-            lastWithScript: false,
             offset: document.documentElement.clientHeight / 2,
             dataRoute: '',
             dataType: 'json',
@@ -224,15 +222,6 @@ export default class InfiniteScroll {
         //look up and cache the next segment, return weather there is moreContent or not
         return this.cacheNextSegment()
             .then(res => {
-
-                //Extra validation, in case the last segment isn't empty, but has <script> tag
-                if (this.config.lastWithScript && this.config.dataType == "html") {
-                    let parser = new DOMParser();
-                    let doc = parser.parseFromString(res, 'text/html');
-                    //if res has only <script>, the parser sets this inside <head>, hence <body> is empty.
-                    if (!doc.body.firstChild) res = [];
-                }
-
                 if (res.length) {
                     this.config.lockInfiniteScroll = false;
 
@@ -301,6 +290,9 @@ export default class InfiniteScroll {
 
                 if (this.config.loadingIndicator.active)
                     this.$loadingIndicator.style.display = 'none';
+
+                if (response.headers.get('NoContent'))
+                    res = [];
 
                 return res;
             })

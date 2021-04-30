@@ -65,7 +65,6 @@ The essential configuration that need to be passed to the constructor in order t
 | scrollLsn           | `boolean`  |   `true`      | Weather to append a scroll listener at the initiate. If `false`, the `onHover` callback of load-more indicator will be use to perform fetch/render of new segments. `addScrollLsn()`/`removeScrollLsn()` can be used to attach/remove listener at later point of script execution. |
 | offset              |  `number`  |`1/2*clientHeight`| The number of pixels such that `fetch()` is triggered on reaching this offset before the end of the content list. In other words, greater number means fetching more content ahead. |
 | dataType      |`'html'`\|`'json'`|   `json`      | The type of retrieved data from fetch request. |
-| lastWithScript      | `boolean`  |   `false`     | Weather the last segment has a `<script>` tag and not empty. This helps to recognize the last segment. |
 | getDataParams       | `function` |   window's query-string | Function return the data (query string or js object) to be used in the fetch request. The default is the current window's query-string: </br> `() => window.location.search.substr(1)`|
 | onError             | `function` |   `() => {}`  | Callback function when the fetch request failed.  |
 | updateParam         | `function` |   modify window's query-string  | Callback function to update the segment param state externally (ie. on local query-string or session storage). The 1st arg should be the parameter key, and the 2nd arg is the value, `updateParam(segmentParam, segment)`.|
@@ -213,6 +212,14 @@ $('inf-loading-indicator').css("display", "none");
  - When caching is done, a `document.documentElement.scrollTop` can be used to auto scroll to the exact point the page was before refresh.
  - `Jump to the top` indicator/button can be added in the corener as an option.
 
+#### v5.0
+ - Use generic solution for indicating the last segment:
+      - Check `NoContent` header to explicitly indicate the last segment, hence the infinityScroll is locked accordingly. This is used when the payload of the last segment isn't empty, and has some contents like a `<script>` tag or a break line. If the `NoContent` header isn't featured in the content end-point, the last segment is known by a response with empty payload.
+      - remove `lastWithScript` config option.
+
+#### v4.3
+- Add `lastWithScript` config option to indicate weather the last segment has a `<script>` tag and not empty. This helps to recognize the last segment. [Deprecated in v5.0]
+
 #### v4.2
  - Add `scrollLsn` config option to skip adding scroll listener if set to `false`, and rely solely on hover-callback of load-more indicator to fetch/render the next segment.
 #### v4.1
@@ -262,14 +269,9 @@ $('inf-loading-indicator').css("display", "none");
    instead of hard-coding the data in fetch function. The default value is current window query string.
  - `getAjaxData()` config should now return an object with `{ key: value }` list,
    However, a normal query string can be used, and a conversion to object will happen on fetch.  
- - Check 'NoMoreContent' in response header. In case it is set to true, the infinityScroll will be locked accordingly.
-   The fallback of not having 'NoMoreContent' in response header is the same as previous 
-   version behaviour, ie. lock infinityScroll after first request with no results.
- - Change `updateParam()` in config to `updateSegmentParam()`, which takes only the segment number to update queryString
-   This changes enable specifying the parameter name (page, segment.. etc), as shown in this example: 
-   `config = { updateSegmentParam: seg => queryString.updateParam('PARAM_NAME', seg) }`. [Deprecated in v2.2]
- - Add fetchOnInitiate to config, which allow for initial fetch with "initial" param set to retrieve 
-   all data till the specified segment on page load.
+ - Check `NoMoreContent` in response header. In case it is set to true, the infinityScroll will be locked accordingly. The fallback of not having `NoMoreContent` in response header is the same as previous version behavior, ie. lock infinityScroll after first request with no results.
+ - Change `updateParam()` in config to `updateSegmentParam()`, which takes only the segment number to update queryString. This changes enable specifying the parameter name (page, segment.. etc), as shown in this example: `config = { updateSegmentParam: seg => queryString.updateParam('PARAM_NAME', seg) }`. [Deprecated in v2.2]
+ - Add fetchOnInitiate to config, which allow for initial fetch with "initial" param set to retrieve all data till the specified segment on page load.
 
 #### v1.1
  - [Fix] Bind all class' functions to "this" keyword in the constructor
