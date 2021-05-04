@@ -131,7 +131,9 @@ export default class InfiniteScroll {
                 this.scrollDown();
 
             //cache first segment, then proceed to autoFill
+            this.config.lockInfiniteScroll = true;
             this.cacheNextSegment().then(() => {
+                this.config.lockInfiniteScroll = false;
                 this.config.autoFill && this.autoFill();
             });
         }
