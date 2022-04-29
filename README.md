@@ -6,15 +6,18 @@
 
 # Infinite Scroll Init
 Initiate infinite scrolling container that consumes content from an API with option for a cool loading indicator 😎.
-The package exposes the `InfiniteScroll` class by default, which is used to instantiate the infinite scroll object with the desired configurations. Further, you can use this object to make reset/fetch call (for example when filter is applied), or change the state such as the segment number of other configurations.
-
-The package also expose `initLoadingIndicator` function as a component, that can be used to initiate loading indicator on given container, without having to initiate the infinite scroll. This is used on pages that doesn't require infinite scroll, but a loading indicator is needed.
+The package exposes the `InfiniteScroll` class by default, which is used to initiate the infinite scroll object with the desired configurations. It also expose `initLoadingIndicator` function, such that it is used to initiate loading indicator on given container for pages that doesn't require infinite scroll.
 
 ## Installation
 
 ```
 npm i --save infinite-scroll-init
 ```
+or
+```
+yarn add infinite-scroll-init
+```
+
 
 Then.. 
 
@@ -58,17 +61,17 @@ The essential configuration that need to be passed to the constructor in order t
 | Config              | Type       | Default       | Description                                                       |
 | ------------------- | :--------: |  :----------: | ----------------------------------------------------------------- |
 | segment             | `number`   |       -       | The segment number on initiate. Default is the value of segment param in window query-string or `1` if this param doesn't exist. |
-| segmentParam        | `string`   | `'segment'`   | The name (key) of the segment parameter other than `segment`, like `page`. |
-| lockInfiniteScroll  | `boolean`  |   `false`     | Lock infinite scroll, so scrolling down won't trigger the fetch function. This is used internally to lock infinite scroll when an empty segment is received (ie. the last segment).|
-| autoFill            | `boolean`  |   `true`      | Keep fetching data until the page is filled (ie. scrollbar appear) |
+| segmentParam        | `string`   | `'segment'`   | The name (key) of the segment parameter. |
+| lockInfiniteScroll  | `boolean`  |   `false`     | Lock infinite scroll, so scrolling down won't trigger the fetch function. This is used internally to lock infinite scroll when an empty segment is received (ie. the last segment). <br/> <br/>_Note: To turn off fetch on scrolling consider `scrollLsn` option instead (see detail of this option bellow), or `removeScrollLsn()` function_ |
+| autoFill            | `boolean`  |   `true`      | To keep fetching data until the page is filled, ie. scrollbar appears. |
 | fetchOnInitiate     | `boolean`  |   `false`     | Trigger a fetch call directly on initiate with `initial=1` param send in the initial request, so the API endpoint differentiate the initial fetch from normal segment fetch. |
-| scrollLsn           | `boolean`  |   `true`      | Weather to append a scroll listener at the initiate. If `false`, the `onHover` callback of load-more indicator will be use to perform fetch/render of new segments. `addScrollLsn()`/`removeScrollLsn()` can be used to attach/remove listener at later point of script execution. |
-| offset              |  `number`  |`1/2*clientHeight`| The number of pixels such that `fetch()` is triggered on reaching this offset before the end of the content list. In other words, greater number means fetching more content ahead. |
+| scrollLsn           | `boolean`  |   `true`      | Weather to append a scroll listener at the initiate. <br/><br/> _Note: `addScrollLsn()` and `removeScrollLsn()` can be used to attach/remove listener at later point of script execution._ |
+| offset              |  `number`  |`1/2*clientHeight`| The number of pixels till the end of content list that triggers `fetch()` function. In other words, greater number means fetching more content ahead. |
 | dataType            |`'html'`\|`'json'`|   `json`      | The type of retrieved data from fetch request. |
 | getDataParams       | `function` |   window's query-string | Function return the data (query string or js object) to be used in the fetch request. The default is the current window's query-string: </br> `() => window.location.search.substr(1)`|
-| onError             | `function` |   `() => {}`  | Callback function when the fetch request failed.  |
-| updateContentCounter| `function` |   `() => {}`  | Callback function to update a content counter according to the `Content-Counter` header in the response. Technically, this function is called whenever the `Content-Counter` header exists, passing the value of this header as the first argument. |
-| updateParam         | `function` |   modify window's query-string  | Callback function to update the segment param state externally (ie. on local query-string or session storage). The 1st arg should be the parameter key, and the 2nd arg is the value, `updateParam(segmentParam, segment)`.|
+| onError             | `function` |   -  | Callback function when the fetch request failed.  |
+| updateContentCounter| `function` |   -  | Callback function to update a content counter according to the `Content-Counter` header in the response. Technically, this function is called whenever the `Content-Counter` header exists, passing the value of this header as the first argument. |
+| updateParam         | `(key, value) => {}` |   modify window's query-string  | Callback function to update the segment param state externally (ie. on local query-string or session storage). The 1st arg should be the parameter key, and the 2nd arg is the value, `updateParam(segmentParam, segment)`. Default is updating segment param on current window's query-string. |
 | loadingIndicator    | `object`   |   inactive    | Please check the configuration of the loading indicator bellow.. |
 | loadMoreIndicator   | `object`   |   inactive    | Please check the configuration of the load-more indicator bellow.. |
 
