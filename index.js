@@ -1,5 +1,5 @@
 /**
- * @version 5.0
+ * @version 5.1.0
  * @author Mahmoud Al-Refaai <Schuttelaar & Partners>
  */
 
@@ -21,6 +21,10 @@ export default class InfiniteScroll {
      * @param {()=>string|JSON} [config.getDataParams]      function return the data (query string or object) to be used in fetch request
      * @param {(res: string|JSON)=>void} config.onSuccess   callback function when fetch request succeed
      * @param {(err: Error)=>void} [config.onError]         callback function when fetch request failed
+     * @param {string} [config.noResultsMessage]            HTML string for message when no results to show. If `config.onNoResults` option is defined, this will be ignored.
+     * @param {(res: string|JSON)=>void} [config.onNoResults]            callback function when there is no results at all (ie. no results in the first segment), 
+     *                                                                   by default it will append the `config.noResultsMessage` to container, if defined.
+     * 
      * @param {(value: number)=>void} [config.updateContentCounter]      callback function to update the total number of items. The value is passed directly from `ContentCounter` header.
      * @param {(key: string, value: string)=>void} [config.updateParam]  callback function to update the segment param in query string
      * 
@@ -29,7 +33,7 @@ export default class InfiniteScroll {
      * @param {string} config.loadingIndicator.color        string indicate the color hash or color name
      * @param {string} config.loadingIndicator.size         string with number + unit (eg. '20px', '0.7em')
      * @param {number} config.loadingIndicator.type         type of indicator [0 => custom, 1 => circle spinning dots, 2 => horizontal dots], default set to 1
-     * @param {string} config.loadingIndicator.html         string with HTML of custom loading indicator (Note: class of outer div need to be 'inf-loading-indicator'), 
+     * @param {string} config.loadingIndicator.html         HTML string for custom loading indicator (Note: class of outer div need to be 'inf-loading-indicator'), 
      *                                                      to use this custom indicator the type should be set to 0.
      * 
      * @param {boolean} config.loadMoreIndicator.active     boolean whether to use load more indicator when there is more content to fetch, default = false
@@ -57,6 +61,13 @@ export default class InfiniteScroll {
             getDataParams: () => window.location.search.substr(1),
             onSuccess: () => {},
             onError: () => {},
+            noResultsMessage: "",
+            onNoResults: () => {
+                if(!this.config.noResultsMessage) return;
+                let parser = new DOMParser();
+                let doc = parser.parseFromString(this.config.noResultsMessage, 'text/html');
+                document.querySelector(this.config.container).append(doc.body.firstChild);
+            },
             updateContentCounter: () => {},
             updateParam: (key, value) => {
                 const dataParams = new URLSearchParams(window.location.search);
@@ -222,6 +233,10 @@ export default class InfiniteScroll {
             res = JSON.parse(res);
 
         this.config.onSuccess(res);
+
+        // check if there is no result, ie. first segment has no results
+        if((typeof res === 'string' && !res || res.length === 0) && this.config.segment <= 2)
+            this.config.onNoResults(res);
 
         //look up and cache the next segment, return weather there is moreContent or not
         return this.cacheNextSegment()
