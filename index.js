@@ -220,7 +220,12 @@ export default class InfiniteScroll {
 
             //cache first segment before rendering
             let resFirst = await this.cacheNextSegment();
-            if (!resFirst.length) return;
+            if (!resFirst.length) {
+                if (this.config.segment <= 1) 
+                    this.config.onNoResults(res);
+                
+                return;
+            }
         }
 
         //increase and update segment state
@@ -235,7 +240,7 @@ export default class InfiniteScroll {
         this.config.onSuccess(res);
 
         // check if there is no result, ie. first segment has no results
-        if((typeof res === 'string' && !res || res.length === 0) && this.config.segment <= 2)
+        if(res.length === 0 && this.config.segment <= 2)
             this.config.onNoResults(res);
 
         //look up and cache the next segment, return weather there is moreContent or not
