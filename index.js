@@ -1,5 +1,5 @@
 /**
- * @version 5.1.0
+ * @version 5.1.2
  * @author Mahmoud Al-Refaai <Schuttelaar & Partners>
  */
 
@@ -188,7 +188,9 @@ export default class InfiniteScroll {
                     //in case there is still more content to fetch, check again if the page is not filled.
                     moreContent && this.autoFill();
                 })
-                .catch(() => {}); //in case of error (rejected promise), ignore it!
+                .catch((e) => {
+                    console.log(e);
+                }); //in case of error (rejected promise), ignore it!
         }
     }
 
@@ -220,12 +222,13 @@ export default class InfiniteScroll {
 
             //cache first segment before rendering
             let resFirst = await this.cacheNextSegment();
-            if (!resFirst.length) {
-                if (this.config.segment <= 1) 
-                    this.config.onNoResults(res);
-                
-                return;
-            }
+
+            //check if there is no results, ie. first segment has no results
+            if (!resFirst.length && this.config.segment <= 1 
+                && this.config.lockInfiniteScroll) // if another request comes in before this request is over, then this will be aborted and `lockInfiniteScroll` will be false!
+                    this.config.onNoResults(resFirst);
+
+            if (!resFirst.length) return;
         }
 
         //increase and update segment state
@@ -239,8 +242,8 @@ export default class InfiniteScroll {
 
         this.config.onSuccess(res);
 
-        // check if there is no result, ie. first segment has no results
-        if(res.length === 0 && this.config.segment <= 2)
+        //check if there is no results, ie. first segment has no results
+        if(res.length === 0 && this.config.segment <= 2 && this.config.lockInfiniteScroll)
             this.config.onNoResults(res);
 
         //look up and cache the next segment, return weather there is moreContent or not
