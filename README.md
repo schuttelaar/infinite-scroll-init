@@ -70,8 +70,9 @@ The essential configuration that need to be passed to the constructor in order t
 | dataType            |`'html'`\|`'json'`|   `json`      | The type of retrieved data from fetch request. |
 | getDataParams       | `function` |   window's query-string | Function return the data (query string or js object) to be used in the fetch request. The default is the current window's query-string: </br> `() => window.location.search.substr(1)`|
 | onError             | `function` |   -  | Callback function when the fetch request failed.  |
-| noResultsMessage    | `string`   |   -  | HTML string for message when there is no results at all (ie. no results in the first segment). If `config.onNoResults` option is defined, this will be ignored.  |
-| onNoResults         | `function` |   -  | Callback function fire after `onSuccess` when there is no results at all (ie. no results in the first segment). By default it will append the `config.noResultsMessage` option to container, if defined.  |
+| noResultsSelector   | `string`   |   -  | Selector string of HTML element to show if there are no results at all (ie. no results in the first segment or `fetchOnInitiate`). It will be hidden when calling `reset()` or `fetch()` function, hence it is hidden when `loadingIndicator` is shown. |
+| noResultsMessage    | `string`   |   -  | HTML string for message when there is no results at all (ie. no results in the first segment or `fetchOnInitiate`). Instead of using this option, the HTML string can be set as `data-no-results-message` attribute to the container. |
+| onNoResults         | `function` |   -  | Callback function fire if there is no results at all (ie. no results in the first segment or `fetchOnInitiate`). By default it will append the `config.noResultsMessage` option to container, if defined.  |
 | updateContentCounter| `function` |   -  | Callback function to update a content counter according to the `Content-Counter` header in the response. Technically, this function is called whenever the `Content-Counter` header exists, passing the value of this header as the first argument. |
 | updateParam         | `(key, value) => {}` |   modify window's query-string  | Callback function to update the segment param state externally (ie. on local query-string or session storage). The 1st arg should be the parameter key, and the 2nd arg is the value, `updateParam(segmentParam, segment)`. Default is updating segment param on current window's query-string. |
 | loadingIndicator    | `object`   |   inactive    | Please check the configuration of the loading indicator bellow.. |
@@ -227,9 +228,14 @@ $('inf-loading-indicator').css("display", "none");
  - When caching is done, a `document.documentElement.scrollTop` can be used to auto scroll to the exact point the page was before refresh.
  - `Jump to the top` indicator/button can be added in the corener as an option.
 
+#### v5.2
+ - Add `noResultsSelector` to hide/show when there is no results at all (the first segment has no results).
+ - Always show (append) `noResultsMessage` option in container, even if `onNoResults` is defined.
+ - Instead of using `noResultsMessage` option, the HTML string can be set as `data-no-results-message` attribute to the container.
+
 #### v5.1
- - Add `onNoResults` callback function to fire after `onSuccess` when there is no results to show.
- - Add `noResultsMessage` to show when there is no results at all (the first segment has no results).
+ - Add `onNoResults` callback function to fire if there is no results to show.
+ - Add `noResultsMessage` to show when there is no results at all (the first segment has no results or `fetchOnInitiate`).
 
 #### v5.0
  - Add `updateContentCounter` callback function to update a content counter according to the `Content-Counter` header in the response.

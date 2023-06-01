@@ -1,5 +1,5 @@
 /**
- * @version 5.1.2
+ * @version 5.2.0
  * @author Mahmoud Al-Refaai <Schuttelaar & Partners>
  */
 
@@ -21,9 +21,9 @@ export default class InfiniteScroll {
      * @param {()=>string|JSON} [config.getDataParams]      function return the data (query string or object) to be used in fetch request
      * @param {(res: string|JSON)=>void} config.onSuccess   callback function when fetch request succeed
      * @param {(err: Error)=>void} [config.onError]         callback function when fetch request failed
-     * @param {string} [config.noResultsMessage]            HTML string for message when no results to show. If `config.onNoResults` option is defined, this will be ignored.
-     * @param {(res: string|JSON)=>void} [config.onNoResults]            callback function when there is no results at all (ie. no results in the first segment), 
-     *                                                                   by default it will append the `config.noResultsMessage` to container, if defined.
+     * @param {string} [config.noResultsSelector]           Selector string of HTML element to show if there are no results at all (ie. no results in the first segment or `fetchOnInitiate`).
+     * @param {string} [config.noResultsMessage]            HTML string for message when no results to show (ie. no results in the first segment or `fetchOnInitiate`).
+     * @param {(res: string|JSON)=>void} [config.onNoResults]            callback function when there is no results at all (ie. no results in the first segment or `fetchOnInitiate`).
      * 
      * @param {(value: number)=>void} [config.updateContentCounter]      callback function to update the total number of items. The value is passed directly from `ContentCounter` header.
      * @param {(key: string, value: string)=>void} [config.updateParam]  callback function to update the segment param in query string
@@ -61,13 +61,9 @@ export default class InfiniteScroll {
             getDataParams: () => window.location.search.substr(1),
             onSuccess: () => {},
             onError: () => {},
-            noResultsMessage: "",
-            onNoResults: () => {
-                if(!this.config.noResultsMessage) return;
-                let parser = new DOMParser();
-                let doc = parser.parseFromString(this.config.noResultsMessage, 'text/html');
-                document.querySelector(this.config.container).append(doc.body.firstChild);
-            },
+            noResultsSelector: "",
+            noResultsMessage: document.querySelector(config.container).dataset.noResultsMessage,
+            onNoResults: () => {},
             updateContentCounter: () => {},
             updateParam: (key, value) => {
                 const dataParams = new URLSearchParams(window.location.search);
@@ -124,6 +120,19 @@ export default class InfiniteScroll {
         this.config.loadMoreIndicator.active &&
             initLoadMoreIndicator(this.config.loadMoreIndicator);
         this.$loadMoreIndicator = document.querySelector('.inf-load-more-indicator');
+
+        this.noResultsHandler = (res) => {
+            if(this.config.noResultsMessage) {
+                let parser = new DOMParser();
+                let doc = parser.parseFromString(this.config.noResultsMessage, 'text/html');
+                document.querySelector(this.config.container).append(doc.body.firstChild);
+            }
+
+            if(this.config.noResultsSelector)
+                document.querySelector(this.config.noResultsSelector).style.display = '';
+
+            this.config.onNoResults(res);
+        }
 
         // fetch initial data; 
         // Since fetchOnInitiate is true, the first segment will be cached before rendering in fetch function!
@@ -211,6 +220,9 @@ export default class InfiniteScroll {
         if (this.config.lockInfiniteScroll) return;
         this.config.lockInfiniteScroll = true;
 
+        if(this.config.noResultsSelector)
+            document.querySelector(this.config.noResultsSelector).style.display = 'none';
+
         if (this.config.loadMoreIndicator.active)
             this.$loadMoreIndicator.style.display = 'none';
 
@@ -223,10 +235,10 @@ export default class InfiniteScroll {
             //cache first segment before rendering
             let resFirst = await this.cacheNextSegment();
 
-            //check if there is no results, ie. first segment has no results
-            if (!resFirst.length && this.config.segment <= 1 
-                && this.config.lockInfiniteScroll) // if another request comes in before this request is over, then this will be aborted and `lockInfiniteScroll` will be false!
-                    this.config.onNoResults(resFirst);
+            //check if there is no results
+            // if another request comes in before this request is over, then this will be aborted and `lockInfiniteScroll` will be false!
+            if (!resFirst.length && this.config.lockInfiniteScroll)
+                    this.noResultsHandler(resFirst);
 
             if (!resFirst.length) return;
         }
@@ -244,7 +256,7 @@ export default class InfiniteScroll {
 
         //check if there is no results, ie. first segment has no results
         if(res.length === 0 && this.config.segment <= 2 && this.config.lockInfiniteScroll)
-            this.config.onNoResults(res);
+            this.noResultsHandler(res);
 
         //look up and cache the next segment, return weather there is moreContent or not
         return this.cacheNextSegment()
@@ -369,6 +381,9 @@ export default class InfiniteScroll {
 
             if (this.config.loadMoreIndicator.active)
                 this.$loadMoreIndicator.style.display = 'none';
+
+            if(this.config.noResultsSelector)
+                document.querySelector(this.config.noResultsSelector).style.display = 'none';
         }
 
         this.abortController.abort();
