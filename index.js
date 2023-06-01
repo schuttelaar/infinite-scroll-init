@@ -152,9 +152,12 @@ export default class InfiniteScroll {
 
             //cache first segment, then proceed to autoFill
             this.config.lockInfiniteScroll = true;
-            this.cacheNextSegment().then(() => {
-                this.config.lockInfiniteScroll = false;
-                this.config.autoFill && this.autoFill();
+            this.cacheNextSegment().then((res) => {
+
+                if (!res.error) {
+                    this.config.lockInfiniteScroll = false;
+                    this.config.autoFill && this.autoFill();
+                }
             });
         }
 
@@ -235,12 +238,11 @@ export default class InfiniteScroll {
             //cache first segment before rendering
             let resFirst = await this.cacheNextSegment();
 
-            //check if there is no results
-            // if another request comes in before this request is over, then this will be aborted and `lockInfiniteScroll` will be false!
-            if (!resFirst.length && this.config.lockInfiniteScroll)
+            //check if there are no results
+            if (!resFirst.data.length && !resFirst.error)
                     this.noResultsHandler(resFirst);
 
-            if (!resFirst.length) return;
+            if (!resFirst.data.length) return;
         }
 
         //increase and update segment state
@@ -254,14 +256,14 @@ export default class InfiniteScroll {
 
         this.config.onSuccess(res);
 
-        //check if there is no results, ie. first segment has no results
-        if(res.length === 0 && this.config.segment <= 2 && this.config.lockInfiniteScroll)
+        //check if there are no results, ie. first segment has no results
+        if(res.length === 0 && this.config.segment <= 2)
             this.noResultsHandler(res);
 
         //look up and cache the next segment, return weather there is moreContent or not
         return this.cacheNextSegment()
             .then(res => {
-                if (res.length) {
+                if (res.data.length) {
                     this.config.lockInfiniteScroll = false;
 
                     if (this.config.loadMoreIndicator.active)
@@ -273,20 +275,12 @@ export default class InfiniteScroll {
                     return false;
                 }
             })
-            .catch(err => {
-                if (this.config.loadingIndicator.active)
-                    this.$loadingIndicator.style.display = 'none';
-
-                if (err.message == 404)
-                    this.config.lockInfiniteScroll = true;
-
-                this.config.onError(err);
-                return false;
-            });
     }
 
     /**
      * look up the next segment and store it in cache (session storage)
+     * return promise that resolve to object with `data` contains the results, and `error` key contains error object if existed
+     * eg. `let { data, error } = await cacheNextSegment();`
      */
     async cacheNextSegment() {
         this.abortController.abort();
@@ -336,12 +330,11 @@ export default class InfiniteScroll {
                 if (response.headers.get('Content-Counter') !== null)
                     this.config.updateContentCounter(response.headers.get('Content-Counter'))
 
-                return res;
+                return { data: res };
             })
             .catch(err => {
-                if (err.name === "AbortError") {
-                    return [];
-                }
+                if (err.name === "AbortError")
+                    return { data: [], error: err };
 
                 if (this.config.loadingIndicator.active)
                     this.$loadingIndicator.style.display = 'none';
@@ -350,7 +343,7 @@ export default class InfiniteScroll {
                     this.config.lockInfiniteScroll = true;
 
                 this.config.onError(err);
-                return [];
+                return { data: [], error: err };
             });
     }
 

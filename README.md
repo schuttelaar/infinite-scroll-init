@@ -232,6 +232,7 @@ $('inf-loading-indicator').css("display", "none");
  - Add `noResultsSelector` to hide/show when there is no results at all (the first segment has no results).
  - Always show (append) `noResultsMessage` option in container, even if `onNoResults` is defined.
  - Instead of using `noResultsMessage` option, the HTML string can be set as `data-no-results-message` attribute to the container.
+ - Internal enhancement for `cacheNextSegment` function
 
 #### v5.1
  - Add `onNoResults` callback function to fire if there is no results to show.
