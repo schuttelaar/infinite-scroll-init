@@ -228,6 +228,8 @@ $('inf-loading-indicator').css("display", "none");
  - When caching is done, a `document.documentElement.scrollTop` can be used to auto scroll to the exact point the page was before refresh.
  - `Jump to the top` indicator/button can be added in the corener as an option.
 
+#### v5.2.1
+ - Bugfix for showing `noResultsMessage` when it shouldn't
 #### v5.2
  - Add `noResultsSelector` to hide/show when there is no results at all (the first segment has no results).
  - Always show (append) `noResultsMessage` option in container, even if `onNoResults` is defined.

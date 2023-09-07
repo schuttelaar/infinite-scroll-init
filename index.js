@@ -122,6 +122,8 @@ export default class InfiniteScroll {
         this.$loadMoreIndicator = document.querySelector('.inf-load-more-indicator');
 
         this.noResultsHandler = (res) => {
+            if (document.querySelector(this.config.container).childElementCount > 0)
+                return;
             if(this.config.noResultsMessage) {
                 let parser = new DOMParser();
                 let doc = parser.parseFromString(this.config.noResultsMessage, 'text/html');
@@ -257,7 +259,7 @@ export default class InfiniteScroll {
         this.config.onSuccess(res);
 
         //check if there are no results, ie. first segment has no results
-        if(res.length === 0 && this.config.segment <= 2)
+        if(res.length === 0 && this.config.segment < 2)
             this.noResultsHandler(res);
 
         //look up and cache the next segment, return weather there is moreContent or not
