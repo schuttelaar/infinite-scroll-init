@@ -230,6 +230,8 @@ $('inf-loading-indicator').css("display", "none");
 
 #### v5.2.1
  - Bugfix for showing `noResultsMessage` when it shouldn't
+ - Bugfix for initialisation error when container does not exist
+
 #### v5.2
  - Add `noResultsSelector` to hide/show when there is no results at all (the first segment has no results).
  - Always show (append) `noResultsMessage` option in container, even if `onNoResults` is defined.

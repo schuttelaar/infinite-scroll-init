@@ -62,7 +62,7 @@ export default class InfiniteScroll {
             onSuccess: () => {},
             onError: () => {},
             noResultsSelector: "",
-            noResultsMessage: document.querySelector(config.container).dataset.noResultsMessage,
+            noResultsMessage: document.querySelector(config.container) ? document.querySelector(config.container).dataset.noResultsMessage : '',
             onNoResults: () => {},
             updateContentCounter: () => {},
             updateParam: (key, value) => {
