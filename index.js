@@ -225,7 +225,7 @@ export default class InfiniteScroll {
         if (this.config.lockInfiniteScroll) return;
         this.config.lockInfiniteScroll = true;
 
-        if(this.config.noResultsSelector)
+        if(this.config.noResultsSelector && document.querySelector(this.config.noResultsSelector))
             document.querySelector(this.config.noResultsSelector).style.display = 'none';
 
         if (this.config.loadMoreIndicator.active)
